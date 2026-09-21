@@ -1,0 +1,5 @@
+# Example fixture site.
+User-agent: *
+Disallow: /private/
+
+Sitemap: https://localhost/sitemap.xml

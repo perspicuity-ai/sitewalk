@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Example Site — home</title>
+  <meta name="description" content="The home page of the example fixture site.">
+  <link rel="canonical" href="https://localhost/">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {"@type": "Organization", "name": "Example Site"},
+      {"@type": ["WebSite", "LocalBusiness"], "name": "Example Site"}
+    ]
+  }
+  </script>
+</head>
+<body>
+  <h1>Example site</h1>
+  <p id="intro">This paragraph is visible text that a non-executing client can read: enough of
+  it to clear the script-shell heuristic, which is the point of the fixture. It exists so the
+  offline gate has a page whose facts are complete: a title, a description, a canonical on its
+  own host, JSON-LD types including a nested graph, and four internal links and one external
+  link.</p>
+  <ul>
+    <li><a href="/about/">About</a></li>
+    <li><a href="/team/">Team</a></li>
+    <li><a href="/services/">Services</a></li>
+    <li><a href="/services/missing/">A service that does not exist</a></li>
+  </ul>
+  <p><a href="https://example.org/elsewhere">Elsewhere</a> is an external link.</p>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard (rendered by script)</title>
+  <meta name="description" content="A page whose content arrives after load.">
+  <link rel="canonical" href="https://localhost/shell.html">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Dashboard"}</script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    // A stand-in for a bundled application. Its size is what trips the script-shell
+    // heuristic: the server returns a document with almost no visible text, and everything a
+    // browser would show arrives only after this runs. sitewalk does not execute it, and says
+    // so rather than reporting the page as empty.
+    const payload = {"routes": ["/", "/reports", "/settings"], "user": null, "theme": "light"};
+    function render(state) {
+      const root = document.getElementById("root");
+      if (!root) { return; }
+      root.innerHTML = state.routes.map(function (route) {
+        return "<a href=\"" + route + "\">" + route + "</a>";
+      }).join(" ");
+    }
+    render(payload);
+    window.addEventListener("load", function () { render(payload); });
+  </script>
+</body>
+</html>

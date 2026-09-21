@@ -1,0 +1,2 @@
+A plain text file in the build. It is in the sitemap and linked from nowhere, so it
+exercises the "non-HTML page" and "orphan" paths at once.

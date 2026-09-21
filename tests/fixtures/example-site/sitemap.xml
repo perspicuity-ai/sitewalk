@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://localhost/</loc></url>
+  <url><loc>https://localhost/about/</loc></url>
+  <url><loc>https://localhost/team/</loc></url>
+  <url><loc>https://localhost/services/</loc></url>
+  <url><loc>https://localhost/services/missing/</loc></url>
+  <url><loc>https://localhost/landing.html</loc></url>
+  <url><loc>https://localhost/untitled.html</loc></url>
+  <url><loc>https://localhost/shell.html</loc></url>
+  <url><loc>https://localhost/private/</loc></url>
+  <url><loc>https://localhost/notes.txt</loc></url>
+  <url><loc>https://localhost/nowhere/</loc></url>
+</urlset>

@@ -1,0 +1,3 @@
+# Example site
+
+This file exists in the fixture so that `llms.txt` is reported as present.

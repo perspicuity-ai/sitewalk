@@ -108,23 +108,39 @@ The project code is in `CONTEXT.md`. Full rules in [docs/RECORDS.md](docs/RECORD
 
 ## Standing constraints
 
-<!-- Replace this section during Project Setup. It is the short list of rules that must not be
-     broken without a recorded choice: the things that are true of this product, not of every
-     product.
+The rules that must not be broken without a recorded choice, because they are true of *this*
+product rather than of every product. Replaced 2026-09-21 during U1 (the template shipped a
+placeholder here); each is checked against [`CONTEXT.md`](CONTEXT.md), and the record for the
+change is [`RECORD.md`](RECORD.md) revision 3.
 
-     A real example, from the agent eligibility check:
-
-     - Standard library only for the runtime. A new dependency needs a recorded choice.
-     - The core report is deterministic. No model may decide or alter a pass/fail result.
-     - The claim boundary holds: never state or imply that the report predicts whether an agent
-       will find, trust or recommend a supplier.
-     - Only the submitted domain is fetched. Nothing else is crawled.
-     - Reports are private by default. Publication is the subject's action.
-     - No accounts, cookies or tracking, and no paid API in the core.
--->
-
+- **Standard library only for the runtime.** Python 3.11+, no dependency, no build step. A new
+  dependency needs a recorded choice, and the reason it is a constraint is that this tool has to
+  install into someone else's deploy gate.
+- **`--dir` performs no network access at all.** It is the deploy gate, and it must work with the
+  machine unplugged. A change that makes the offline path capable of a request is a defect, not a
+  tradeoff.
+- **Only the submitted origin is fetched.** Nothing else is crawled, checked or resolved. A tool
+  that follows a link off-site is a tool that can be pointed at someone else's server.
+- **Every fetched address passes the guard in `sitewalk/guard.py`**, which refuses non-http(s)
+  schemes, ports other than the scheme default, and any address that is not globally routable —
+  including the cloud metadata address — and re-checks the connected peer after connecting. The
+  guard is the highest-risk code here; a change to it needs a recorded choice.
+- **The claim boundary holds.** Never state or imply that the report predicts whether an agent
+  will find, trust or recommend a site, and never report ranking, citations or traffic.
+- **Nothing is executed.** No JavaScript engine, no browser, no shelling out. A page that looks
+  script-rendered is *said* to look script-rendered, with the evidence, and never called empty.
+- **The report is deterministic.** No model may decide or alter a finding, a severity or an exit
+  code. The same bytes produce the same report.
+- **A gate must be able to fail.** `scripts/check-project.sh` runs real checks and `--strict`
+  exits non-zero on an error finding. A green check that establishes nothing is worse than no
+  check, because it is believed.
+- **No accounts, cookies, tracking, telemetry or paid API.** The client sends no cookie and keeps
+  no credential.
+- **No persistence and no PII.** Nothing is written to disk, and nothing about a person is
+  collected: only published pages are read, and only structural facts are recorded.
 - **Credentials and personal data never enter a record, a commit or the repository.**
-- <fill in the rest during Project Setup>
+- **Reports are written to stdout or a file and are not published by this project.** Publication
+  is the principal's retained decision.
 
 ## Authority
 
@@ -138,10 +154,14 @@ the parts that are not blocked.
 
 ## Definition of done
 
-- `make ci` exits 0. It runs the record check and `scripts/check-project.sh`.
-- **`scripts/check-project.sh` ships as a stub that fails on purpose.** Fill it in with the real
-  checks. A stub that exits 0 lets `make ci` pass while tests fail, which is worse than no check
-  because it is believed.
+- `make ci` exits 0. It runs the record check and `scripts/check-project.sh`, which byte-compiles
+  the package, runs the suite with the network unavailable, exercises `python3 -m sitewalk`
+  through the real entry point, and checks that the report still states its claim boundary.
+- **`scripts/check-project.sh` runs real checks and can fail.** It was a template stub until U1
+  (2026-09-21); a stub that exits 0 lets `make ci` pass while tests fail, which is worse than no
+  check because it is believed. If you change what a check covers, prove the script still fails
+  on the defect it is meant to catch — piping a command's output into `tail` makes the pipeline's
+  status `tail`'s, which is always 0, and that mistake was made here once.
 - `make records` is clean. A run reporting the checker missing is a **skip, not a pass**.
 - The change is in a record if it meets the admission test, and the record names its evidence.
 - Every actor in the change is named. No job title, no retired label, no model name.

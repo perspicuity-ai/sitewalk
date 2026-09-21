@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 3
+revision: 4
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-21T13:05:00-06:00"
+updated_at: "2026-09-21T14:10:00-06:00"
 record_status: open
 work_status: active
 ---
@@ -227,7 +227,7 @@ until he names a project and its `build/`.
 | Record | Owner | State | Depends on |
 | --- | --- | --- | --- |
 | This record — frame, alternatives, selection, grant, units U1–U5 | Moss | open, active — U1 picked up | David's ratification, given 2026-09-21 |
-| `docs/records/` — U1's reconciliation of the existing package | Moss | to be filed at U1's return; meets the admission test under Q4 | U1 |
+| [`docs/records/2026-09-21-verify-before-keeping-package.md`](docs/records/2026-09-21-verify-before-keeping-package.md) — keep / amend / delete for the pre-plan package | Moss | filed at U1's return, `submitted`, awaiting acceptance | U1; Q4 placed it here |
 | [`docs/DESIGN.md`](docs/DESIGN.md) — D1–D10, the technical choices and their measured thresholds | Moss | written before this plan, revised in place | U1's reconciliation decides which of D1–D10 survive |
 
 ### U1 pickup plan
@@ -391,13 +391,23 @@ registered and pending.
 
 | Criterion | Evidence source | Owner, window or trigger | Finding | Response |
 | --- | --- | --- | --- | --- |
-| A1–A5, A8, A9 (the offline gate) | The committed revision, the fixtures, `make ci` | Moss, at U1 delivery | Pending — U1 not started | Pending |
+| A1–A5, A8, A9 (the offline gate) | The committed revision, the two independent derivations, `make ci` | Moss, at U1 delivery, 2026-09-21 | **Met, with the limits below.** Nine of nine per-page facts and twelve of twelve site-wide findings agree with computations made without importing the tool's parser; `--dir` runs inside a harness where any socket use raises; `make ci` exits 0 and exits 2 on each of three injected defects; 244 tests pass offline | Accepted by Moss as self-check only — see the next row. U1's sub-record carries the detail |
 | A7 (the guard) | `tests/test_guard.py`, injected fakes | Moss, at U2 delivery | Pending — U2 not started | Pending |
 | A6 (the plan check) | CLI tests | Moss, at U3 delivery | Pending — U3 not started | Pending |
-| Independent assessment of U1–U3 by an assessor who did not write them | A named assessor's return against A1–A9 | David to grant; not before delivery | Pending — no assessor named | Pending |
+| Independent assessment of U1–U3 by an assessor who did not write them | A named assessor's return against A1–A9 | David to grant; not before delivery | **Not established for U1.** Moss wrote the package and the reconciliation, so A1–A5, A8 and A9 are a self-check. The two defects U1 found were both found by running code against injected breakage rather than by review, which is evidence that the checks work, not that the design is right | Requested in the return to the principal: name an assessor, or accept the self-check with its stated limit |
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 4, 2026-09-21T14:10:00-06:00. **U1 delivered and assessed against A1–A5, A8 and A9.**
+Source: U1's committed evidence and
+[`docs/records/2026-09-21-verify-before-keeping-package.md`](docs/records/2026-09-21-verify-before-keeping-package.md).
+Reason: the skill requires each planned result to be marked delivered, blocked or stopped before a
+stop, with its actual evidence. What changed: the decision index now names U1's sub-record; the
+Review table carries U1's findings and, explicitly, that the assessment is a self-check because
+the author and the assessor are the same actor. What is preserved: revision 2's criteria text —
+the criteria were not adjusted to fit the result. Affects: U1, delivered; U4 remains blocked on
+Q2; U2, U3 and U5 remain to be picked up.
 
 Revision 3, 2026-09-21T13:05:00-06:00. **David ratified the plan: alternative A is selected
 and U1–U5 are granted.** Source: the principal's direct instruction of 2026-09-21, against basis

@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-2026-09-21-verify-before-keeping-package
-revision: 1
+revision: 2
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T13:20:00-06:00"
-updated_at: "2026-09-21T14:05:00-06:00"
+updated_at: "2026-09-21T20:40:00-06:00"
 record_status: open
 work_status: submitted
 ---
@@ -85,8 +85,8 @@ that failed to implement its criteria.
 | `link_statuses()` | `crawl.py` | No caller. The crawl answers link questions from the pages it read; a URL-to-status map was never consumed |
 | `PageFact.title_display`, `PageFact.description_display` | `facts.py` | No caller. The report formats these itself |
 | `SiteReport.of_kind()` | `facts.py` | No caller. `errors_of` covers the one real use |
-| `Page.final_url` | `facts.py`, `fetch.py` | Written by the fetch layer, read by nothing — the crawl reads `redirect_to`. Leaving both was two names for one idea, one of them wrong |
-| `Finding.detail` | `facts.py`, `findings.py`, `report.py` | Always an empty dictionary, and no finding ever populated it. It was JSON output that claimed detail existed |
+| `Page.final_url` | `facts.py`, `fetch.py` | Read by nothing **at deletion** — the crawl reads `redirect_to`, so it was two names for one idea, one of them wrong. **Corrected 2026-09-21:** it *was* read earlier in the same session, by a `if page.final_url …: fact.redirect_to = page.final_url` branch, so the unqualified "read by nothing" was stronger than the evidence. The deletion still stands: at the moment of deletion nothing read it, and the surviving name is `redirect_to` |
+| `Finding.detail` | `facts.py`, `findings.py`, `report.py` | Always empty **at deletion**, and printed into the JSON as though it held detail. **Corrected 2026-09-21:** "no finding ever populated it" was false — `_add(..., sampled=True)` filled `{"sampled": true}` on two finding kinds until that marker was removed earlier in the same session. What holds is the narrower claim: at deletion nothing wrote it, and the JSON advertised a field that could only ever be empty |
 | `sources.METHOD`, `sources.surface_urls()`, `sources.default_source_dir()`, `sitemap._SITEMAP_NS`, `SitemapResult.add_urls()` | `sources.py`, `sitemap.py` | No callers. `_SITEMAP_NS` was declared and never applied, so it documented an intent the parser does not implement |
 
 **Amended — five items:**
@@ -141,11 +141,11 @@ have known the check was meaningful.
 | A1 — every per-page fact is produced | The two independent derivations, and `tests/test_pages.py` | Moss, at U1 delivery, 2026-09-21 | **Met.** Nine of nine facts agree with an independent computation across 12 fixture files, 0 mismatches | Accepted for the fixture. Not evidence for any site outside it — see below |
 | A2 — every site-wide finding is produced | The findings derivation, and `tests/test_findings.py` | Moss, 2026-09-21 | **Met.** Twelve of twelve agree | Accepted |
 | A3 — offline and live sources agree on the same bytes | `tests/test_dir_mode.py::DirAndUrlAgreeOnTheSameBytes` | Moss, 2026-09-21 | **Met.** Every field of every page is equal between the two sources reading the same fixture, not merely similar | Accepted. The fixture serves the same bytes both ways, which is the condition the criterion states |
-| A4 — `--dir` makes no network request | `tests/fakes.py::no_network`, applied to every offline test and to three CLI tests | Moss, 2026-09-21 | **Met.** `python3 -m sitewalk --dir` completes inside a harness where any socket or name lookup raises | Accepted. The modules `--dir` reaches do not import `socket`; `urllib` is used only for URL parsing |
+| A4 — `--dir` makes no network request | `tests/fakes.py::no_network`, applied to every offline test and to three CLI tests | Moss, 2026-09-21 | **Met**, but the evidence sentence below was **wrong and is corrected**. `python3 -m sitewalk --dir` completes inside a harness where any socket or name lookup raises. Finch audited independently with a CPython audit hook: **zero socket events** on `--dir`, `--strict --json` and `--plan`, with `--url` firing `socket.getaddrinfo` as the control | Accepted on Finch's audit. **Correction, 2026-09-21:** this row previously claimed "the modules `--dir` reaches do not import `socket`". That is false — `cli.py` imports `fetch.py`, which is `import socket`, and `socket`, `ssl` and `http.client` are all in `sys.modules` after `import sitewalk.cli`. The criterion is met because the *offline path does not reach a request*, not because no network-capable module is imported; the harness proves the first and says nothing about the second. Recorded rather than quietly rewritten, because an evidence sentence that the code contradicts is the defect this project exists to catch, and it sat in the row certifying that the tool does no network I/O |
 | A5 — no ranking, citation, traffic or recommendation claim; the no-JavaScript limit is stated | Output assertions in `tests/test_findings.py` and `tests/test_cli.py`, plus the check script's phrase check | Moss, 2026-09-21 | **Met.** A test asserts no finding's message contains ranking, citation, traffic, recommendation, score, grade or SEO vocabulary; the boundary is asserted in both output formats and mechanically in `check-project.sh` | Accepted |
 | A8 — `make ci` exits 0 and the check it runs is real | `make ci`, and the three deliberate breakages | Moss, 2026-09-21 | **Met.** Green on the committed revision; exits 2 on each of three injected defects | Accepted |
 | A9 — the suite passes with no network | `make ci` | Moss, 2026-09-21 | **Met.** 244 tests, no network, 0.17 s | Accepted |
-| Independent assessment of this unit | A named assessor who did not write it | Not yet granted | **Not established.** Moss is the author of both the package and this reconciliation, so this is a self-check, not an independent assessment | Carried as a request in the return |
+| Independent assessment of this unit | Finch, an assessor who did not write it, returning 2026-09-21 | David, 2026-09-21 | **Performed, with a stated limit.** All five claims confirmed, including the three defects and the falsifiability of `check-project.sh`; Finch reproduced the `tail` bug from the transcript and injected one defect per check, reverting each. **The limit: Finch read the package before writing its audit**, so the agreement is *different code, fixture-derived* rather than *blind to the specification*. That weakens what the 72/72 and 12/12 establish — they show the two derivations agree, not that either is a correct reading of the principal's request | Accepted with the limit recorded. Four corrections came back and all four are applied in this record; two further defects they found are registered as U9 |
 
 **What this record does not establish.** That the tool is correct on any site other than the
 fixture. The fixture was written by the same increment as the code, so it encodes the same reading
@@ -163,3 +163,17 @@ package to be re-derived and cut back; Q4 placed that decision in a sub-record b
 will later need the reason the code was kept. Affects: `sitewalk/` (six deletions, five
 amendments), `tests/` (the threshold pin, the CLI failures resolved, three CLI offline tests
 added), `scripts/check-project.sh`, `AGENTS.md`. No code was deleted that a criterion traces to.
+
+Revision 2, 2026-09-21T20:40:00-06:00. **Finch's independent assessment returned, and all four of
+its corrections are applied.** Source: Finch's assessment of 2026-09-21, relayed by the principal.
+Reason: an assessment's corrections belong in the record it corrects, and three of the four are
+statements this record made that its own evidence did not support. What changed: the A4 evidence
+sentence — which claimed the modules `--dir` reaches do not import `socket`, and which the code
+contradicts — is corrected in place with the false text quoted rather than removed, and the
+criterion is kept on Finch's independent audit-hook evidence; the `Page.final_url` and
+`Finding.detail` deletion reasons are narrowed to what is true at deletion, with the earlier reads
+and writes stated; and Finch's own independence limit — it read the package before writing the
+audit — is recorded in the assessment row, because it bounds what the agreement establishes. What
+is preserved: every earlier finding and every criterion. Affects: this record's evidence and the A4
+row; two further defects Finch found are registered in the parent as U9. **No code was changed by
+this revision.**

@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 6
+revision: 14
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-21T15:20:00-06:00"
+updated_at: "2026-09-21T20:05:00-06:00"
 record_status: open
 work_status: submitted
 ---
@@ -37,7 +37,9 @@ does not know; Q5: a missing `llms.txt` must not gate). The product frame, the c
 the tool specification remain `inherited` from the principal (2026-09-21,
 [`CONTEXT.md`](CONTEXT.md)) and are not reopened.
 
-Work scope: **U1, U2, U3 and U5 delivered; U4 blocked on Q2.** U1 reconciled and cut back the
+Work scope: **U1, U2, U3 and U5 delivered; U4 blocked on Q2; U6 registered and not granted.**
+U6 exists because confirming the robots.txt stance exposed a real gap: a gate that skips pages can
+pass while under-reporting, and the skip is not yet unmissable. U1 reconciled and cut back the
 pre-plan package against the registered facts contract, U2 hardened the address guard, U3 built
 the plan check, U5 wrote the reader-facing documents. Each registered its pickup plan before it
 started. U4 cannot start until the principal names a project and its `build/`.
@@ -53,15 +55,18 @@ Outcome: the tool is built and green on its own fixtures. **Nothing has been obs
 real built site or a real live site**, which is what U4 is for, and that is the honest boundary on
 every claim below.
 
-Next: David — accept, correct or send back the delivered units, and answer Q2 by naming a project
-whose built directory U4 may run against.
+Next: Moss — hold the tree still until Finch's independent assessment returns, then address its
+findings under the grant and register U6's pickup plan before implementing it.
+Further pending: David, to answer Q2 by naming a project whose built directory U4 may run against.
 
-Dependency: Nothing blocks U1, U2, U3 or U5 — all delivered. **U4 is blocked on open question Q2**: the principal has not named
+Dependency: The tree is frozen pending Finch's assessment, so U6 waits for that rather than for a
+decision; the grant, the shape and the pickup plan are all in place for it to start immediately
+after. **U4 is blocked on open question Q2**: the principal has not named
 which project's `build/` may be tested against, and no `build/` directory exists in this
 workspace. U4 must not run until he answers.
 
-Waiting on: David (principal), for Q2 and for the assessment. No unit can proceed without one
-of those answers.
+Waiting on: Finch (assessor), for the independent assessment of A1–A7. Further: David (principal),
+for Q2. The code is frozen until Finch returns, by the principal's instruction.
 
 Review due: 2026-10-05 — see Review. A1–A5, A8 and A9 become assessable when U1 returns; A6 and
 A7 at U2 and U3; B1–B3 need a real site and remain unobserved.
@@ -321,6 +326,14 @@ without the principal's word.
 evidence — or a material finding changes the frame, the comparison or the selection, in which
 case the unit stops and returns to David.
 
+**Proposal P1 — granted 2026-09-21, not yet applied.** Amend `AGENTS.md`'s definition of done with
+the standing rule recorded above — every new test and fixture must answer "which wrong implementation
+would this catch?", and a fixture that cannot separate a right implementation from a plausible
+wrong one is not a fixture. The principal granted it and is propagating the same rule to the
+`project-setup` template. **It is not applied yet because it is a hold, not a dispute**: `AGENTS.md`
+is part of what Finch is reading, and editing a document after an assessor read it invalidates that
+part of the assessment. It is applied the moment the freeze lifts, in a commit that names it as P1.
+
 **Not requested:** authority to publish anything; authority to select the alternative, which is
 David's; authority to treat the existing code as ratified, which this plan's U1 must earn.
 
@@ -329,11 +342,14 @@ David's; authority to treat the existing code as ratified, which this plan's U1 
 | # | Result | Inputs / dependencies | Owner, timing | Done when (acceptance criteria) | Effort estimate |
 | --- | --- | --- | --- | --- | --- |
 | **U0** | The unratified work already in the tree: 2,592 lines of package, 2,378 lines of test, 13 fixture files | The earlier `Run` grant (revision 1), now superseded | Moss, 2026-09-21 (already done) | **Not a unit of this plan.** Reported for accounting only. It is kept only where U1 traces it to a criterion, and deleted where it does not | — already spent, and not counted as progress against this plan |
-| **U1** — delivered | The offline gate: `--dir` mode, discovery, per-page facts, site-wide findings, the text and JSON reports, `--strict`, and a real `scripts/check-project.sh` — verified against this plan rather than assumed from the tree | The fixtures; the criteria in Review; `CONTEXT.md`'s finding list. Depends on nothing outside this repository | Moss, this session if ratified, otherwise the next | Each per-page fact and each site-wide finding in A1–A3 is re-derived from a named fixture and a named test; no module remains that cannot be traced to a criterion; **the two CLI failures are resolved or the failing module is deleted**, the suite passes, and `make ci` exits 0; `make records` stays clean | 2–3 focus sessions. Uncertainty **medium**: the code exists, so this is verification and repair, but the parser bug and the fixture that lied both showed that "it exists and passes" is not evidence. If the facts contract turns out to be met mainly by post-hoc tests, this estimate doubles and alternative A collapses toward B |
-| **U2** — delivered | The address guard, ported and tested, and the live source's network dependencies injectable so the command line can be exercised with no network | [`agent-eligibility/eligibility/fetch.py`](../agent-eligibility/eligibility/fetch.py), read-only; the existing guard tests. Depends on U1 for the test harness | Moss, after U1 | Schemes other than http/https, ports other than the scheme default, and any host resolving to a private, loopback, link-local, multicast, reserved, unspecified or metadata address are refused, **naming the rule**; the connected peer is re-checked after connecting; a literal address is refused without consulting a resolver; every redirect hop is re-validated; `--url` runs end to end with no network; the two CLI failures are gone and the suite passes with the network unplugged | 0.5–1 focus session. Uncertainty **low**: the rule set is fixed by a tested source, and the injection point is diagnosed |
-| **U3** — delivered | `--plan site.json`: `required_surfaces` and the home page's `identity.schema_types` enforced, unknown keys ignored with a reason, an unreadable plan exiting non-zero | The `siteplan` format, read-only. Depends on U1; independent of U2 | Moss, after U2 | The example plan in `siteplan`'s `CONTEXT.md` is met by the conforming fixture and unmet by the bare one; `offering`, `url_rules`, `crawler_stance`, `pages` and `identity.fields` are named in the output as **not checked**, with the reason; a malformed or missing plan exits 2 and never 0 | 1 focus session. Uncertainty **low** for the two enforced keys, **medium** for the format staying still while `siteplan` is itself unbuilt (Q3) |
-| **U4** — blocked | One documented run against a real built directory from another project, and the gate's verdict on it | A `build/` directory and its owner's permission, both named by David. **BLOCKED on Q2 — not started** | Moss, with the principal | The run completes with no network access; its findings are reviewed by the project that owns the build; a real regression, if the build has one, is named; the false-positive judgement is recorded rather than assumed | 0.5 session plus the other project's time. Uncertainty **high**: no `build/` directory exists anywhere in this workspace today, so the whole unit waits on a person |
-| **U5** — delivered | `README.md` (what it does, how to run it, what it does not do) and the design record | U1–U3 as built. Depends on U1 for the package, U3 for the plan section | Moss, alongside U1 and finished with U3 | A reader with no context can install and run both modes from the README alone; "what it does not do" states the no-JavaScript limit, the origin bound, the absence of any ranking, citation or recommendation claim, and that `--dir` makes no network request; `docs/DESIGN.md` carries each threshold with its rejected alternatives, or says plainly that it is judgement | 1 focus session. Uncertainty **low** |
+| **U1** (delivered) | The offline gate: `--dir` mode, discovery, per-page facts, site-wide findings, the text and JSON reports, `--strict`, and a real `scripts/check-project.sh` — verified against this plan rather than assumed from the tree | The fixtures; the criteria in Review; `CONTEXT.md`'s finding list. Depends on nothing outside this repository | Moss, this session if ratified, otherwise the next | Each per-page fact and each site-wide finding in A1–A3 is re-derived from a named fixture and a named test; no module remains that cannot be traced to a criterion; **the two CLI failures are resolved or the failing module is deleted**, the suite passes, and `make ci` exits 0; `make records` stays clean | 2–3 focus sessions. Uncertainty **medium**: the code exists, so this is verification and repair, but the parser bug and the fixture that lied both showed that "it exists and passes" is not evidence. If the facts contract turns out to be met mainly by post-hoc tests, this estimate doubles and alternative A collapses toward B |
+| **U2** (delivered) | The address guard, ported and tested, and the live source's network dependencies injectable so the command line can be exercised with no network | [`agent-eligibility/eligibility/fetch.py`](../agent-eligibility/eligibility/fetch.py), read-only; the existing guard tests. Depends on U1 for the test harness | Moss, after U1 | Schemes other than http/https, ports other than the scheme default, and any host resolving to a private, loopback, link-local, multicast, reserved, unspecified or metadata address are refused, **naming the rule**; the connected peer is re-checked after connecting; a literal address is refused without consulting a resolver; every redirect hop is re-validated; `--url` runs end to end with no network; the two CLI failures are gone and the suite passes with the network unplugged | 0.5–1 focus session. Uncertainty **low**: the rule set is fixed by a tested source, and the injection point is diagnosed |
+| **U3** (delivered) | `--plan site.json`: `required_surfaces` and the home page's `identity.schema_types` enforced, unknown keys ignored with a reason, an unreadable plan exiting non-zero | The `siteplan` format, read-only. Depends on U1; independent of U2 | Moss, after U2 | The example plan in `siteplan`'s `CONTEXT.md` is met by the conforming fixture and unmet by the bare one; `offering`, `url_rules`, `crawler_stance`, `pages` and `identity.fields` are named in the output as **not checked**, with the reason; a malformed or missing plan exits 2 and never 0 | 1 focus session. Uncertainty **low** for the two enforced keys, **medium** for the format staying still while `siteplan` is itself unbuilt (Q3) |
+| **U4** (blocked) | One documented run against a real built directory from another project, and the gate's verdict on it | A `build/` directory and its owner's permission, both named by David. **BLOCKED on Q2 — not started** | Moss, with the principal | The run completes with no network access; its findings are reviewed by the project that owns the build; a real regression, if the build has one, is named; the false-positive judgement is recorded rather than assumed | 0.5 session plus the other project's time. Uncertainty **high**: no `build/` directory exists anywhere in this workspace today, so the whole unit waits on a person |
+| **U5** (delivered) | `README.md` (what it does, how to run it, what it does not do) and the design record | U1–U3 as built. Depends on U1 for the package, U3 for the plan section | Moss, alongside U1 and finished with U3 | A reader with no context can install and run both modes from the README alone; "what it does not do" states the no-JavaScript limit, the origin bound, the absence of any ranking, citation or recommendation claim, and that `--dir` makes no network request; `docs/DESIGN.md` carries each threshold with its rejected alternatives, or says plainly that it is judgement | 1 focus session. Uncertainty **low** |
+| **U6** (granted, not started) | **Make the robots.txt skip structural in the report.** The report must state, where a reader cannot miss it, how many paths were excluded and why | `sitewalk/crawl.py` must keep the matched rule; `sitewalk/report.py` must surface the count; `tests/` must prove each | Moss, after Finch's assessment returns and under a fresh pickup plan | Four criteria, all currently **unmet**: (1) the total count appears in the report header, not only in Notes; (2) the count appears in `limits` in the JSON as `paths_skipped_robots`; (3) each skip names the path **and quotes the matched rule** (`Disallow: /private/`), which today is discarded by `sitemap.parse_robots`; (4) a test asserts all three, so removing any of them fails the suite | 0.5 focus session. Uncertainty **low**: the skip list already exists; this is surfacing it and keeping the rule |
+| **U7** (granted, pickup plan registered) | **Make the plan verdict honest about what it knows: a version gate, and unverified surfaces that are never reported as absent.** Under the format's rule 4, keys grow but versions announce: an unknown key is additive growth a consumer may carry and name, while an unknown version means a key's meaning may have moved, so the verdict must be conditional in default mode and an error finding under `--strict` | `siteplan/docs/PLAN-FORMAT.md` at `fe8433b` (frozen format 1), read-only; the two version cases already in `siteplan/docs/fixtures/plan-conformance.json` | Moss, after U6 | Five criteria: (1) `plan_version` 1 reads clean, unqualified; (2) an older version reads normally, unqualified; (3) an unknown or newer version is met-with-a-condition in default mode and an **error finding exiting non-zero** under `--strict`; (4) an absent or mistyped `plan_version` is an error finding under `--strict` too — an unsupported verdict rather than a conditional one — with a message distinct from the unknown-version case; (5) a required surface the consumer has **no check for** is reported as *unverified*, never as absent, as a `conditional` finding: default runs disclose it and exit 0, and `--strict` refuses to certify the plan and exits non-zero. The severity is defined in the report's own documentation and reaches `finding_counts` in the JSON. Tests load the seven **valid** plans from the conformance fixture and assert each is met, and assert that an unchecked surface produces no `plan_surface_missing` finding | 1 focus session. Uncertainty **low** |
+| **U8** (granted by ruling, not started) | **Check the two surfaces this consumer could not check: `json-ld` and `rss.xml`.** The format's vocabulary is closed at five and describes what a plan may require, not what one tool looks for, so the gap closes on this side | `siteplan/docs/PLAN-FORMAT.md` at `fe8433b`, read-only. Cost measured 2026-09-21 | Moss, after U7 | Four criteria: (1) a plan requiring `rss.xml` is met when `/rss.xml` answers 2xx and unmet when it does not; (2) a plan requiring `json-ld` is met when any crawled page carries a JSON-LD `@type`; (3) **four states are distinguishable in the JSON, without reading a message string**: fetched-and-present, fetched-and-absent, derived-and-not-fetched, and not-checked-at-all; and (4) **the disclosure stays**: a surface this consumer still cannot check is named, is state *not checked*, stays `conditional`, and still gates under `--strict`, so a sixth surface added later reopens the same gap under the same rule. The vocabulary stays at five | 0.5–1 focus session. Uncertainty **low**, and the ruling is conditional on the cost turning out as measured: the two are one request and one already-held fact. Raised from 0.5 by the four-state requirement |
 
 **Order and dependency.** U1 → U2 → U3, with U5 alongside U1 and U4 startable as soon as David
 names a project. U4 and U3 can run in either order once U2 is done; the requested order puts the
@@ -419,6 +435,383 @@ request.
 
 **Files U5 expects to touch:** `README.md`, `docs/DESIGN.md`, and this record.
 
+### The robots.txt stance, confirmed as a property
+
+Decided by Moss under the grant, confirmed by David on 2026-09-21, and recorded here rather than
+left implicit in `crawl.py`, because it is a property of the product and not an implementation
+detail.
+
+**The property.** `sitewalk` honours the build's own `robots.txt` in `--dir` mode as well as in
+live mode. robots.txt is a statement about the **content**, not about the transport, so a tool
+that reports what a machine can read must not read what the site has refused. It is also what
+makes `--dir` and `--url` agree on the same bytes, which is the property that makes the offline
+path a gate rather than a second opinion (criterion A3).
+
+**It is not a flag, deliberately.** A gate whose scope depends on a switch is a gate nobody can
+compare across runs, so there is no option to include disallowed paths.
+
+**Evidence that it holds in both modes:** `tests/test_dir_mode.py::TheOfflineCrawl.test_a_robots_disallowed_path_is_not_read_in_offline_mode_either`
+and `tests/test_crawl.py::RobotsIsObeyed`, which assert both that the path is not read and that the
+skip is recorded. Checked by hand on the fixture: the offline report states `/private/` was not
+fetched, and a live crawl over the fake connection never requests `/private/x/`.
+
+**The risk this carries, and its state.** A gate that skips pages can pass while under-reporting,
+so the skip has to be unmissable. **It is not yet.** As delivered, the skip appears once, in the
+Notes block: `not fetched: /private/ — robots.txt disallows this path for our user agent`. It is
+absent from the report header, absent from the JSON `limits`, and the matched rule
+(`Disallow: /private/`) is discarded by `sitemap.parse_robots`, so the report says that robots
+disallowed the path without saying what it disallowed it by. A reader who reads only the summary
+cannot tell that anything was excluded. That gap is **U6** below, and it is the reason the property
+is written here rather than assumed.
+
+### U7 pickup plan
+
+Registered before U7 begins, as the skill requires for each unit at its own pickup. U7 is granted
+and starts after U6. Scoped on 2026-09-21 by reading the frozen specification at
+`siteplan/docs/PLAN-FORMAT.md` (`fe8433b`).
+
+#### The design, confirmed: the report states what is true, the gate decides what is tolerable
+
+The principal confirmed **design A** on 2026-09-21 — a distinct severity in the finding model, with
+`--strict` mapping severities to exit codes rather than creating findings. The general form is worth
+stating because it governs three of the fixes in this record and a later reader would otherwise
+repair one and reintroduce another:
+
+> **The report states what is true. The gate decides what is tolerable.** Whether a plan's version is
+> unknown is a fact about the file; whether that fact should fail a build is a policy.
+
+Design B — creating the finding at `error` severity only when `--strict` is set — lets the policy
+write the fact, so two runs of the same site against the same plan could disagree, and comparability
+is the only thing that makes a report checkable at all. The same separation is already at work in
+U6 (the robots skip is a fact; whether it gates is policy) and in U7's fifth criterion (an unchecked
+surface is a fact; whether it fails is policy).
+
+#### One new severity, not two
+
+| Severity | Meaning | Gates under `--strict` |
+| --- | --- | --- |
+| `error` | Something is wrong with the site as built | Yes |
+| `conditional` | **New.** The verdict depends on something this consumer does not know, so the result is not a clean one: an unknown or newer plan version, an absent or mistyped one, or a required surface the consumer has no check for | Yes |
+| `info` | An observation or a site's own choice, with nothing left unknown | No |
+
+Both version cases and the unverified surface take `conditional`. They could have been split —
+`conditional` for the version, `unverified` for the surface — and that was rejected: the two say the
+same thing about the verdict, that it is not fully supported, and two names for one meaning is how a
+severity table stops being readable. The distinction the principal drew between them is in the
+**message**, which must differ, not in the severity.
+
+#### The correction: an unchecked surface gates under `--strict`
+
+This criterion first said an unchecked surface "fails nothing". **That contradicted the severity
+table above and the table wins**, corrected on the principal's direction of 2026-09-21. The reason
+it was wrong is worth keeping, because it was not carelessness: the concern behind it was **not
+punishing a site for a gap in the tool**, and that concern is real.
+
+The resolution is the one already built elsewhere in this record: **disclose by default, refuse when
+asked to certify.** A default run reports the unchecked surface and exits 0, so no site fails for a
+gap in `sitewalk`. `--strict` is opt-in and exists to refuse results that cannot be certified, and a
+gate whose job is to certify that a built site meets its plan cannot certify a plan it is unable to
+check. Passing while part of the plan went unexamined would be the same overclaim this unit exists
+to remove, one level up: not "the site lacks `rss.xml`" but **"the site satisfies the plan"**, when
+the tool does not know.
+
+So one fact, one severity, two policies — the same shape as the rest of this record.
+
+#### A consequence to state rather than discover: two surfaces can never pass a strict gate
+
+With the format's closed vocabulary at five surfaces and this consumer checking three, **any plan
+whose `required_surfaces` names `rss.xml` or `json-ld` can never pass a `--strict` run.** That is a
+real design consequence, not a bug, and it pushes a decision: implement those two checks, or stop
+naming them in `required_surfaces`. Registered as open item **Q7** below with its owner, rather than
+left for whoever first runs `--strict` against such a plan.
+
+#### The two consequences, made explicit
+
+1. **The severity reaches the JSON, not only the summary.** A machine reader is the one most likely
+   to treat a conditional verdict as a clean one, and the JSON is the contract. `severity` already
+   appears per finding; `finding_counts` gains a `conditional` key so a consumer can read the
+   verdict without walking the list.
+2. **The severity is named and defined in the report's own documentation**, so a consumer does not
+   have to infer its meaning from the exit code — which is the thing design A exists to prevent.
+   The definition goes in the text report's legend, in `README.md`, and in `docs/DESIGN.md`.
+
+**The exit-code mapping is written as a policy table, not as a condition buried in code:**
+
+| Findings present | Exit without `--strict` | Exit with `--strict` |
+| --- | --- | --- |
+| Any `error` or `conditional` | 0 | 1 |
+| `info` only, or none | 0 | 0 |
+
+#### Scope decision: one unit, not two
+
+The principal offered a fifth criterion inside U7 or a separate U8. **It is folded into U7**, for
+one reason: the version gate and the unverified-surface split are the same defect — the verdict
+claiming more than the consumer knows — found in the same function and fixed in the same pass. Two
+units would need two pickup plans, two reviews and two commits for one change to `check_plan`. That
+is the choice, and it is recorded because the alternative was offered rather than assumed away.
+
+#### The defect, stated precisely
+
+`sitewalk` looks for three surfaces: `robots.txt`, `sitemap.xml`, `llms.txt`. The format's
+`required_surfaces` is a closed vocabulary of five, adding `rss.xml` and `json-ld`. When a plan
+requires one of those two, the enforcement path checks `report.surfaces`, finds no entry, and emits:
+
+```
+[ERROR] plan_surface_missing: the plan requires rss.xml, which the site does not publish
+```
+
+**That is a false claim about the site.** The tool never looks for `rss.xml`, so it cannot know
+whether the site publishes one. "Not found" and "not checked" are different claims, and the report
+makes the stronger one. This is the same class as the `sample`-style defects U1 removed and the
+`Finding.detail` field that was written and never read: the output asserting something the code
+never established.
+
+**The rule for U7:** a required surface the consumer has no check for is reported as
+**unverified**, the output says the tool does not check it, and it is a `conditional` finding — so a
+default run discloses it and exits 0, and a `--strict` run refuses to certify the plan. The closed
+vocabulary and the consumer's capabilities are then free to drift apart without the report lying
+about it, and without a gate certifying a plan it could not check.
+
+#### The version rule, with the fourth case
+
+| Input | Verdict | Gate |
+| --- | --- | --- |
+| `plan_version` 1 | Met, unqualified | — |
+| An **older** version | Met, unqualified: an older plan is fully specified by its own version | — |
+| An **unknown or newer** version | Conditional. The plan is **valid** against a specification this consumer does not hold, so the keys it reads may mean something else | Error finding under `--strict`; in default mode the condition appears in the summary, not in Notes |
+| An **absent or mistyped** version | A definite fault: the plan is **invalid** against every version, and with no readable version the consumer cannot know the semantics of any key, so a clean verdict is not conditional but unsupported | Error finding under `--strict`, with a message distinct from the unknown-version case |
+
+The two failing cases share a gate and differ in what they say about the file. Conflating them would
+tell a reader "this might be a newer format" when the truth is "this file is malformed", which is
+the more actionable of the two.
+
+#### Test-design trap, carried forward
+
+The conformance fixture holds 45 cases: 7 valid, 38 invalid by design, testing the *producer's*
+messages for faults such as `pages[0].title`. Rule 6 explicitly permits a consumer to carry and name
+what the producer rejects, and this consumer is deliberately tolerant, so **the 38 must not be
+asserted as failures for `sitewalk`**. Loading all 45 as accept-cases would produce a suite that
+fails 38 times while being wrong about the specification. This is the fourth instance of the
+"check that cannot fail" class — caught before writing the test rather than after — and it joins P1's
+record when that lands.
+
+The fixture already contains the version cases U7 needs: `unknown-version` (`plan_version: 2`) and
+`version-not-an-integer` (`"1"` as a string).
+
+
+
+**What the specification now requires, and what changes.** The format's rule 4 — *keys grow,
+versions announce* — splits a treatment this consumer currently applies uniformly:
+
+| Input | Today | Required |
+| --- | --- | --- |
+| Unknown key | Ignored, named in a note | Unchanged. **Naming every ignored key is the condition of the permission, not advice** |
+| `plan_version` 1 | Met, unqualified | Unchanged |
+| An **older** version | Met, with a note | Read normally, unqualified: an older plan is fully specified by its own version |
+| An **unknown or newer** version | Met, with a note | **Conditional.** The summary carries the condition in default mode, and under `--strict` it is an error finding and exits non-zero |
+| An **absent or mistyped** version | Note, non-gating | Reported as the fault in the file that it is, and not conflated with the unknown-version case |
+
+**Two designs considered.** Either the conditional verdict is a distinct severity in the finding
+model, or the version finding is created at `error` severity only when `--strict` is set. The first
+keeps the report a pure function of the site and the plan, which is what makes the report
+comparable between runs; the second lets the exit status decide a fact about the file. **The first
+is preferred** and will be registered with its reason when U7's pickup plan is written.
+
+**A test-design trap, recorded because U6 is about to hit the same class.** The conformance fixture
+holds 45 cases, of which **38 are invalid by design** — they test the *producer's* messages for
+faults such as `pages[0].title` or a mistyped `identity.schemaTypes`. A consumer is explicitly
+permitted by rule 6 to carry and name what the producer rejects, and this consumer is deliberately
+tolerant, so **those 38 must not be asserted as failures for `sitewalk`**. Loading all 45 as
+"must pass" would be a test asserting the opposite of the specification. U7 uses the seven valid
+plans as accept-cases and may use a few invalid ones only to assert that tolerance holds and is
+disclosed.
+
+**The conformance fixture already contains the two cases U7 exists for**: `unknown-version`
+(`plan_version: 2`, expected producer message "expected 1, got 2") and `version-not-an-integer`
+(`"1"` as a string). So U7 can test the split without inventing a fixture, which is the same
+discipline U6 now follows.
+
+**Capability note, resolved.** `--plan` implements only `required_surfaces` and
+`identity.schema_types`; the fixture's `required_surfaces` values are from a closed vocabulary
+(`robots.txt`, `sitemap.xml`, `llms.txt`, `rss.xml`, `json-ld`) and three of the four are not
+surfaces this tool looks for. `rss.xml` on a valid case would therefore be reported unmet. That is
+the existing disclosure doing its job — the output names the surfaces it did not find — and it is
+recorded here rather than discovered later as a surprise.
+
+**Acceptance criteria for U7:** the five registered in the unit table — the four version cases
+and the unverified-surface rule, the last carrying its own correction — plus the severity's
+presence in the JSON `finding_counts` and its definition in the report's documentation, and A8
+and A9 staying green.
+
+**Files U7 expects to touch:** `sitewalk/facts.py` (the severity), `sitewalk/plan.py`,
+`sitewalk/report.py`, `sitewalk/findings.py`, `tests/test_plan.py`, `tests/test_cli.py`,
+`tests/test_findings.py`, `README.md`, `docs/DESIGN.md`, and this record.
+
+### U8 scoping: the measured cost, and one asymmetry
+
+Registered after U7. The principal granted it by ruling on 2026-09-21, **conditional on the cost
+being what it looked like**, so the cost was measured before registering rather than after:
+
+| Surface | What it needs | Measured |
+| --- | --- | --- |
+| `rss.xml` | Add the name to `SURFACE_PATHS`; the existing surface loop already fetches each name, records status, content type and bytes, and `_PAGE_EXCEPTIONS` derives from the same tuple | **One request, no new code path.** Confirmed: a missing `/rss.xml` behaves exactly like the other three in both sources, and a live crawl over the fake connection fetches it in the same loop |
+| `json-ld` | A fact already held: `PageFact.json_ld_types` per page, aggregated today into `report.json_ld_type_counts`, which is reported and otherwise unused | **No request at all.** Confirmed: 4 of 11 fixture pages carry JSON-LD, and the site-wide type counts are already computed |
+
+**The asymmetry: `json-ld` is not a URL.** `robots.txt`, `sitemap.xml`, `llms.txt` and `rss.xml`
+are paths; `json-ld` cannot be fetched and is established from pages already read. A `Surface`
+carrying `url` and `status` cannot represent that, and a synthetic entry with two nulls **does not
+read as "derived" — it reads as "we fetched it and learned nothing"**, which is a different and
+worse claim. That is the `Finding.detail` lesson arriving early: a field whose absence has two
+possible meanings is read as the wrong one.
+
+**So the requirement is four distinguishable states, in the JSON and not only in prose:**
+
+| State | Fetched | What it means | Plan verdict |
+| --- | --- | --- | --- |
+| `present` | yes, 2xx | The site publishes it | Met |
+| `absent` | yes, non-2xx | The site does not publish it | Unmet — a real finding about the site |
+| `derived` | no, and there is nothing to fetch | Established from pages already read, such as `json-ld` | Met or unmet on the derived fact |
+| `not_checked` | no, because this consumer has no check | The gap. Named, `conditional`, gates under `--strict` | Neither met nor unmet: **unverified** |
+
+**The shape is U8's to pick** — a `kind` discriminator on `Surface`, a separate derived-surface
+record, or a second lookup path — and the tiebreaker is the preference for a single lookup in the
+plan check. What is not optional is that a machine reader tells state 2 from 3 from 4 without
+reading a message string.
+
+**A defect the requirement exposed, present today.** The plan check currently reads:
+
+```python
+surface = report.surfaces.get(name)
+if surface is None or not surface.exists:
+    check.unmet_surfaces.append(name)
+```
+
+`surface is None` is the *not checked* case and `not surface.exists` is the *absent* case, and the
+two are collapsed into one branch. That is why the `rss.xml` false claim was possible: an unchecked
+surface took the path meant for an absent one. **The lookup itself has to change, not only the
+record's shape** — an unchecked surface must never enter `unmet_surfaces`.
+
+**Verification, as required: make the wrong change and watch it fail.** For U8 that means
+deliberately collapsing two of the four states in the model and confirming the tests fail — the
+assertion must be on the state a machine reads, not on a message. The same discipline caught the
+script-shell thresholds and the `check-project.sh` pipe.
+
+**What does not change.** The closed vocabulary stays at five. A surface this consumer cannot check
+is still named in the output, still `conditional`, and still gates under `--strict` — implementing
+two checks makes the gate able to certify more, it does not make the disclosure optional. If the
+format adds a sixth surface, the same gap reopens and the same rule applies.
+
+### U6 pickup plan
+
+Registered before U6 begins. The principal granted U6 on 2026-09-21 and confirmed the shape below;
+the tree was frozen for Finch's independent assessment, so U6 starts only after that returns and
+its findings are taken on their merits.
+
+**How U6 will be carried out, and the shape it will take.**
+
+1. **`sitemap.Rule` carrying `(pattern, source_line)`**, and `is_disallowed(path, rules)` returning
+   the matching `Rule` or `None` rather than a bool. The rule is unrecoverable at both ends today:
+   `parse_robots` discards the line that produced each pattern, and `is_disallowed` discards which
+   pattern matched.
+2. **`source_line` is the line exactly as read from `robots.txt`** — the whole line, with any
+   leading whitespace, internal spacing and trailing comment intact. Not reconstructed from the
+   parsed parts, and not normalised. The value of quoting is that a reader can take the string out
+   of the report, search the file, and find it; a reconstruction that is *almost* the line defeats
+   the purpose while looking like it works.
+   - **This is not the same as the `line` variable the parser already computes.** That variable is
+     the result of `raw.split("#", 1)[0].strip()`. Quoting it happens to pass on the current
+     fixture, whose `Disallow:` line has no comment and no padding, and fails on
+     `Disallow: /private/   # legacy` by silently dropping the comment. The line kept must be the
+     one as read.
+   - The line is kept **without its newline**, because `splitlines()` removes it and a quote
+     carrying a terminator would not be byte-identical to anything a reader can select in the
+     file.
+3. **The count in the header, and `paths_skipped_robots` in the JSON `limits`**, so a reader who
+   reads only the summary cannot reach the end of the report without knowing something was
+   excluded.
+4. **No flag.** A gate whose scope depends on a switch is a gate nobody can compare across runs.
+5. **The fixture must be able to tell the two implementations apart, and today it cannot.** The
+   plan above names the raw-versus-processed distinction, and naming it does not fix it: a
+   documented distinction with no fixture that exercises it is the same defect U1 already found
+   when a boundary test imported the constant it was testing. So U6 changes
+   `tests/fixtures/example-site/robots.txt` to carry a deliberately ugly `Disallow` line — leading
+   whitespace, irregular internal spacing, and a trailing comment with a marker that appears
+   nowhere else in the fixture:
+
+   ```
+     Disallow:   /private/   # legacy, revisit
+   ```
+
+   The parser reads that as the pattern `/private/`, so the existing skip tests keep their meaning.
+   The report must quote the line as it stands, comment and padding included.
+   - **The assertion is equality, not membership.** The naive version of this test —
+     `assert processed_line in fixture_text` — cannot fail, because the processed string is a
+     substring of the raw one. Both are findable in the file; only one is the line. So the test
+     asserts that the report's quote **equals** the fixture line, which fails under the wrong
+     implementation.
+   - **Verified by making the wrong change once and watching it fail**, as `check-project.sh` was
+     verified in U1, rather than by reasoning that it would.
+   - The trailing-comment case is chosen deliberately over the alternative of finding a rule whose
+     comment is not last in the file: robots.txt has no such ordering, so the trailing comment is
+     the available separator, and it separates the two implementations on its own.
+
+6. **Tests assert the three surfaces independently, not a helper that both produces and checks
+   them** — this project has already been bitten once by a test that could not fail (the
+   script-shell thresholds, U1). In particular: take a rule out of the fixture and require the
+   report's quote to appear **byte-identical** in the fixture file it came from, so a
+   reconstruction that is merely close fails.
+
+**Why this shape.** Two alternatives were considered and rejected:
+
+- **Re-deriving the rule at the call site** by rescanning `robots.txt` where the report is built.
+  Smaller diff, and rejected because it would put the `applies` state machine (`User-agent: *`
+  versus `sitewalk`, comments, an empty `Disallow:`) in two places. The trade is not smaller diff
+  against larger diff, it is **one source of truth against two** — and a report that quotes a rule
+  its own crawler did not use is worse than one that quotes nothing.
+- **A positional third tuple element.** Every unpacking site changes anyway, and it makes each
+  future addition another positional decision. A named object absorbs the next field without
+  touching a call site.
+
+Both reasons are recorded because a later reader would otherwise reopen a settled choice: the
+first is a correctness argument that is invisible in the diff, and the second is why the small
+option was not taken.
+
+**Acceptance criteria for U6:** the four registered in the unit table, plus A8 and A9 staying
+green.
+
+**Files U6 expects to touch:** `sitewalk/sitemap.py`, `sitewalk/crawl.py`, `sitewalk/facts.py`,
+`sitewalk/report.py`, `sitewalk/findings.py`, `tests/test_sitemap.py`, `tests/test_crawl.py`,
+`tests/test_dir_mode.py`, and this record.
+
+
+
+### A standing rule for tests in this project
+
+Adopted 2026-09-21, on the principal's suggestion, because the same class of defect has now been
+found twice in this repository by two different routes: **a check that cannot fail.**
+
+| Found | How it could not fail |
+| --- | --- |
+| The script-shell thresholds (U1) | The boundary test imported the constant it was testing, so moving the threshold from 200 to 5000 kept all 243 tests green |
+| `scripts/check-project.sh` (U1) | Its test step piped the suite into `tail`, so `set -e` saw `tail`'s exit status and `make ci` printed "ci passed" with two failing tests |
+| The raw-versus-processed quote (U6, caught before implementing) | The fixture's `Disallow:` line had no comment and no padding, so the deliberately wrong implementation would have passed |
+
+**The rule.** For every new test and every new fixture, answer one question in the test itself or
+in the record: *which wrong implementation would this catch?* If the answer is none, the test is
+decoration and the fixture is decoration with it. A test that asserts only that a function returns
+what the function returns is not evidence, and it is worse than no test because it is counted.
+
+**It applies to fixtures, not only to assertions.** The U6 case is the sharper one: the assertion
+was reasonable and the *fixture* could not distinguish the cases, so the test would have passed
+against a wrong implementation while looking correct. A fixture that cannot separate a right
+implementation from a plausible wrong one is not a fixture.
+
+**Stated where.** The same rule belongs in `AGENTS.md` under the definition of done, so a worker
+who never reads this record still meets it. That is a process change to a file outside this
+record's scope, so it is **not** made here: it is registered as proposal P1 under the requested
+grant, to be applied when the principal authorises a change to `AGENTS.md` or when U6 runs under
+the grant that already includes that file.
+
 ## Out of scope
 
 | Not in this plan | Reason |
@@ -444,6 +837,7 @@ Each blocks something specific. None of them is a reason to stop work that this 
 | Q4 | **Do you want a sub-record in `docs/records/` per consequential choice, or does this record hold them?** [`docs/RECORDS.md`](docs/RECORDS.md) allows both, and the directory is empty | David | How the corpus is organised, and whether U2's guard port gets its own record |
 | Q5 | **Should a missing `llms.txt` gate, or stay a note?** Today it is a non-gating note. Making it gate is a real policy choice with a real false-positive cost on sites that never wanted one | David | U1's severity split, and how noisy the gate is on sites that did not ask for this tool |
 | Q6 | **Do you want `AGENTS.md`'s standing constraints replaced with this project's?** They still hold the template's placeholder comment and a single real constraint | David | Not work in this plan: a process change outside it |
+| ~~Q7~~ **resolved** | **Two required surfaces could never pass a strict gate.** The format's vocabulary is five surfaces; this consumer checked three. **Resolved by the principal's ruling of 2026-09-21: implement the two missing checks**, because `required_surfaces` is a closed vocabulary describing what a plan may legitimately require, not what one tool happens to look for. Narrowing it to three would delete a real requirement — a site with an RSS feed is a normal site — to accommodate a gap in the consumer, so the gap is the thing to close. Registered as **U8** | Ruling: David, 2026-09-21. The ruling was **conditional on the cost**, so the cost was measured before registering: see U8 | Closed. U8 carries it |
 
 ## Review criteria
 
@@ -482,6 +876,102 @@ registered and pending.
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 14, 2026-09-21T20:05:00-06:00. **U8 gains the four-state requirement, and a live defect
+it exposed is recorded.** Source: the principal's requirement of 2026-09-21 that a machine reader
+distinguish fetched-and-present, fetched-and-absent, derived-and-not-fetched and not-checked-at-all
+without reading a message. Reason: a `Surface` with two nulls does not read as derived, it reads as
+fetched-and-empty — the same ambiguity that made `Finding.detail` a claim the code never
+established. What changed: U8 gains a fourth criterion and the four states with their plan verdicts;
+the cost estimate rises to 0.5–1 session; and the plan check's `surface is None or not
+surface.exists` is recorded as the defect that let an unchecked surface take the absent surface's
+path — the mechanism behind the `rss.xml` false claim. What is preserved: the disclosure criterion,
+which now reads as state 4, and the vocabulary at five. Affects: U8. **No code was written, amended
+or committed in this revision.**
+
+Revision 13, 2026-09-21T19:40:00-06:00. **Q7 is resolved by ruling and U8 registers the two
+checks.** Source: the principal's ruling of 2026-09-21, conditional on the cost. Reason: Q7 was
+registered with an owner who was not going to answer it, and the ruling closes it by closing the
+gap on this side — the vocabulary describes what a plan may require, so `sitewalk` grows the checks
+rather than `siteplan` narrowing what it may ask for. What changed: Q7 is marked resolved with the
+ruling and its condition; U8 is registered with three criteria; the measured cost of both checks is
+recorded, along with the asymmetry that `json-ld` is not a URL and so takes a different shape from
+the other four surfaces, to be decided when U8 starts. What is preserved: the disclosure rule and the
+`conditional` severity, which the ruling explicitly leaves in place. Affects: U8, which runs after
+U7. **No code was written, amended or committed in this revision.**
+
+Revision 12, 2026-09-21T19:10:00-06:00. **A contradiction in U7's criteria is corrected, and its
+consequence registered as Q7.** Source: the principal's correction of 2026-09-21. Reason: the fifth
+criterion said an unchecked surface "fails nothing" while the severity table registered an hour
+earlier put it under `conditional`, which gates — two statements in one plan that cannot both be
+true, and living with both would have left the implementer to choose. What changed: the criterion now
+reads that default runs disclose and exit 0 while `--strict` refuses to certify; the reason the
+earlier wording was wrong is kept, because the concern behind it — not punishing a site for a gap in
+the tool — is real and is answered by that split; and the design consequence that a plan requiring
+`rss.xml` or `json-ld` can never pass a strict gate is registered as Q7 with its owner, rather than
+left to be discovered. What is preserved: the severity table, design A, and every earlier revision.
+Affects: U7, which starts after U6, and Q7, which awaits the principal. **No code was written,
+amended or committed in this revision.**
+
+Revision 11, 2026-09-21T18:45:00-06:00. **U7's pickup plan is registered with design A and one
+new severity.** Source: the principal's confirmation of design A and its two consequences,
+2026-09-21. Reason: a pickup plan registers before its unit starts, and two things had to be settled
+rather than left to the implementation — how many severities the split creates, and where the
+severity is defined. What changed: the general rule (*the report states what is true, the gate
+decides what is tolerable*) is recorded as the form of three separate fixes; `conditional` is fixed
+as one severity covering both version cases and the unverified surface, with the principal's
+distinction carried in the messages rather than the severity; the exit-code mapping is written as a
+policy table; and the JSON and documentation consequences are acceptance criteria. What is
+preserved: every earlier revision and the four prior criteria. Affects: U7, which starts after U6.
+**No code was written, amended or committed in this revision.**
+
+Revision 10, 2026-09-21T18:15:00-06:00. **U7 is granted and its scope is fixed: the verdict must
+not claim more than the consumer knows.** Source: the principal's grant and his correction of the
+capability note, 2026-09-21, plus an inspection that reproduced the false claim. Reason: the plan
+check emits `the plan requires rss.xml, which the site does not publish` for a file this tool never
+looks for — a claim about the site the code never established, and the same class as the `sample`
+defects U1 removed. What changed: U7 gains a fifth criterion (an unchecked surface is reported
+unverified — **that criterion's "and fails nothing" wording was wrong and is corrected in revision
+12; the criterion now gates under `--strict`**); the fourth version case now gates too, as an unsupported rather than
+conditional verdict, with its own message; the scope decision to fold both into U7 rather than
+split a U8 is recorded with its reason. What is preserved: every earlier revision. Affects: U7,
+which starts after U6. **No code was written, amended or committed in this revision.**
+
+Revision 9, 2026-09-21T17:30:00-06:00. **A frozen interface arrived from `siteplan`, and its rule
+4 registers a new unit.** Source: the principal's relay of Heron's freeze notice, and
+`siteplan/docs/PLAN-FORMAT.md` read at `fe8433b`. Reason: the format is now authoritative and
+frozen, and its version rule differs from this consumer's behaviour — an unknown or newer
+`plan_version` must be a conditional verdict and a `--strict` failure, where this consumer currently
+notes it and passes. What changed: U7 is registered with four criteria and no grant; U7's scoping,
+its two candidate designs and a test-design trap around the 38 deliberately invalid conformance
+cases are recorded; P1 is marked granted and its application is held with the reason. What is
+preserved: A1–A9 and every earlier revision. Affects: U7 and P1. **No code was written, amended or
+committed in this revision**; the tree remains frozen at `24c27b`.
+
+Revision 8, 2026-09-21T16:45:00-06:00. **U6's grant is confirmed, its shape is registered, and
+the fixture gap it depends on is recorded as work.** Source: the principal's confirmation of shape
+A and its two requirements of 2026-09-21, plus an inspection of the fixture. Reason: the plan
+named a raw-versus-processed distinction that the current fixture cannot detect, and a documented
+distinction with no fixture exercising it is the defect U1 already found once. What changed: the
+pickup plan now requires a deliberately ugly `Disallow` line with a unique comment marker, an
+equality assertion rather than a membership one, and verification by making the wrong change and
+watching it fail; a standing rule for tests and fixtures is recorded with its three instances; and
+proposal P1 registers the `AGENTS.md` change that would apply it beyond this record. What is
+preserved: the four U6 acceptance criteria and every earlier revision. Affects: U6, and P1, which
+awaits the principal. **No code was written, amended or committed in this revision.** The tree
+remains frozen at `24c27b` for Finch's assessment.
+
+Revision 7, 2026-09-21T16:10:00-06:00. **The robots.txt stance is recorded as a property, and U6
+registers a gap it exposed.** Source: the principal's reply of 2026-09-21 confirming the stance and
+requiring the skip to be unmissable, plus an inspection of the report. Reason: a property the
+product depends on belongs in the record rather than implicit in the code, and the inspection found
+that the skip is reported only in the Notes block — absent from the header, absent from `limits`,
+and with the matched rule discarded — so the property is stated together with the fact that it is
+not yet upheld. What changed: the stance and its evidence are recorded; U6 is registered with four
+unmet criteria and no grant; the position now records the code freeze pending Finch's assessment.
+What is preserved: A1–A9 as registered, and every earlier revision. Affects: U6, and the assessment
+it waits on. **No code was written, amended or committed in this revision, and none will be until
+the assessment returns.**
 
 Revision 6, 2026-09-21T15:20:00-06:00. **U3 and U5 delivered and assessed against A6.** Source:
 U3's and U5's committed evidence. Reason: each planned result is marked delivered before a stop.

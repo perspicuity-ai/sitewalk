@@ -64,6 +64,9 @@ class PlanCheck:
     unmet_surfaces: list[str] = field(default_factory=list)
     unverified_surfaces: list[str] = field(default_factory=list)
     conditions: list[str] = field(default_factory=list)
+    #: Which of the enforced keys the plan actually carried, so a sub-check that never ran is
+    #: reported as "not run" rather than as met or failed.
+    enforced: list[str] = field(default_factory=list)
     missing_schema_types: list[str] = field(default_factory=list)
     home_json_ld_types: list[str] = field(default_factory=list)
     planned: bool = False
@@ -170,6 +173,7 @@ def check_plan(report: SiteReport, plan: dict[str, Any], path: str = "") -> Plan
 
     required = plan.get("required_surfaces")
     if required is not None:
+        check.enforced.append("required_surfaces")
         # A single surface name as a bare string is accepted here: the meaning is unambiguous,
         # and "is a list" is the kind of strictness that costs a producer a release for nothing.
         names = _as_list(required, allow_single_string=True)
@@ -199,11 +203,13 @@ def check_plan(report: SiteReport, plan: dict[str, Any], path: str = "") -> Plan
 
     identity = plan.get("identity")
     if identity is not None:
+        check.enforced.append("identity")
         if not isinstance(identity, dict):
             check.problems.append("identity is not an object")
         else:
             wanted = identity.get("schema_types")
             if wanted is not None:
+                check.enforced.append("identity.schema_types")
                 types = _as_list(wanted)
                 if types is None:
                     check.problems.append("identity.schema_types is not a list of strings")
@@ -235,6 +241,23 @@ def check_plan(report: SiteReport, plan: dict[str, Any], path: str = "") -> Plan
     return check
 
 
+def _sub_check(
+    *, ran: bool, unmet: list[str], unverified: list[str], faults: list[str]
+) -> bool | None:
+    """``True`` met, ``False`` not met, ``None`` when the check did not run.
+
+    Three outcomes, because two would force one of two lies: a plan that never mentions the key
+    cannot be reported as passing the check, and must not be reported as failing it either.
+    """
+    if not ran or faults:
+        return None
+    if unmet:
+        return False
+    if unverified:
+        return None
+    return True
+
+
 def apply_to_report(check: PlanCheck, report: SiteReport) -> None:
     """Add a plan's verdict to a report's findings, so ``--strict`` can gate on them."""
     report.plan = {
@@ -245,11 +268,22 @@ def apply_to_report(check: PlanCheck, report: SiteReport) -> None:
         "passed": check.passed,
         "verdict": check.verdict,
         "conditions": list(check.conditions),
-        # A sub-check is met only when it was actually checked. Reporting `met: true` for a check
-        # that could not run is the same overclaim as reporting an unchecked surface absent.
-        "required_surfaces_met": not check.unmet_surfaces and not check.unverified_surfaces,
+        # A sub-check reports met / not met / **None when it did not run**. `None` is not `false`:
+        # claiming `true` for a check that could not run is the overclaim this project keeps
+        # finding, and claiming `false` would be a finding about a site that was never examined.
+        "required_surfaces_met": _sub_check(
+            ran="required_surfaces" in check.enforced,
+            unmet=check.unmet_surfaces,
+            unverified=check.unverified_surfaces,
+            faults=check.problems,
+        ),
         "required_surfaces_unverified": list(check.unverified_surfaces),
-        "identity_schema_types_met": not check.missing_schema_types and not check.problems,
+        "identity_schema_types_met": _sub_check(
+            ran="identity.schema_types" in check.enforced,
+            unmet=check.missing_schema_types,
+            unverified=[],
+            faults=check.problems,
+        ),
         "home_json_ld_types": check.home_json_ld_types,
         "notes": check.notes,
     }

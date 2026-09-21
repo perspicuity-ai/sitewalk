@@ -37,11 +37,14 @@ ALLOWED_PORTS = {"http": 80, "https": 443}
 
 @dataclass(frozen=True)
 class Address:
-    """One answer from the resolver, in the shape ``socket.getaddrinfo`` returns."""
+    """One answer from the resolver.
 
-    host: str
-    port: int
-    family: int
+    Holds only the socket address, because that is the only part the guard reads
+    (``address.sockaddr[0]``, the IP). The name and port were carried too and read nowhere: they
+    are the caller's own arguments echoed back, and the guard already has them. ``family`` was
+    needed when *constructing* a literal address, not when holding one.
+    """
+
     sockaddr: tuple
 
 
@@ -53,8 +56,8 @@ def default_resolver(host: str, port: int) -> list[Address]:
     """Resolve with the standard library, returning every answer rather than the first."""
     infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
     out: list[Address] = []
-    for family, _type, _proto, _canon, sockaddr in infos:
-        out.append(Address(host=host, port=port, family=family, sockaddr=sockaddr))
+    for _family, _type, _proto, _canon, sockaddr in infos:
+        out.append(Address(sockaddr=sockaddr))
     return out
 
 
@@ -132,7 +135,7 @@ def check_host(host: str, port: int, resolver: Resolver = default_resolver) -> l
     if literal is not None:
         if not is_public_address(literal):
             raise GuardError(f"refused {host}: it is the non-public address {literal}")
-        return [Address(host=host, port=port, family=socket.AF_INET, sockaddr=(literal, port))]
+        return [Address(sockaddr=(literal, port))]
     try:
         addresses = resolver(host, port)
     except socket.gaierror as exc:

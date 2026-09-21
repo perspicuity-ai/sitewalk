@@ -12,6 +12,7 @@ post-connection test asserts the refusal names the peer address.
 
 from __future__ import annotations
 
+import pathlib
 import socket
 import unittest
 
@@ -284,3 +285,48 @@ class TheGuardIsAppliedByTheFetchLayer(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheAddressHoldsOnlyWhatIsRead(unittest.TestCase):
+    """U9: U1's deletion test, applied to this unit's own work.
+
+    `Address` carried `host`, `port` and `family`, all written and none read. The guard reads
+    `sockaddr[0]` and nothing else, so the others were the same defect that deleted
+    `Page.final_url` — and they were missed because U1's audit was run against the items already
+    identified rather than across the package.
+    """
+
+    def test_address_carries_only_the_socket_address(self):
+        from dataclasses import fields
+
+        self.assertEqual([f.name for f in fields(guard.Address)], ["sockaddr"])
+
+    def test_the_guard_reads_the_ip_from_the_socket_address(self):
+        addresses = guard.check_host("example.com", 443, fakes.resolver_for("93.184.216.34"))
+        self.assertEqual(addresses[0].sockaddr[0], "93.184.216.34")
+
+    def test_a_private_literal_still_refuses_after_the_slimming(self):
+        with self.assertRaises(GuardError):
+            guard.check_host("169.254.169.254", 80, fakes.resolver_map({}))
+
+
+class NoDeadErrorTypes(unittest.TestCase):
+    def test_every_error_type_is_raised_or_caught_somewhere(self):
+        # PlanError was defined and never referenced. A public exception type with no raiser is a
+        # promise the package does not keep.
+        import inspect
+
+        from sitewalk import errors
+
+        defined = {
+            name
+            for name, value in vars(errors).items()
+            if inspect.isclass(value) and issubclass(value, Exception)
+        }
+        sources = " ".join(
+            path.read_text()
+            for path in (pathlib.Path(__file__).parent.parent / "sitewalk").glob("*.py")
+        )
+        for name in sorted(defined):
+            with self.subTest(error=name):
+                self.assertIn(f"{name}(", sources, f"{name} is defined and never raised")

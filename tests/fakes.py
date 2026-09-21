@@ -35,9 +35,11 @@ def refuse_lookup(*_args, **_kwargs):
 
 
 def address(ip: str, port: int = 443, host: str = "example.com") -> guard.Address:
+    """A resolver answer. ``host`` is accepted and ignored: ``Address`` holds only the socket
+    address, because that is the only part the guard reads."""
     family = socket.AF_INET6 if ":" in ip else socket.AF_INET
     sockaddr = (ip, port, 0, 0) if family == socket.AF_INET6 else (ip, port)
-    return guard.Address(host=host, port=port, family=family, sockaddr=sockaddr)
+    return guard.Address(sockaddr=sockaddr)
 
 
 def resolver_for(*addresses: str):

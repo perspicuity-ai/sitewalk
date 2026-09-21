@@ -479,3 +479,48 @@ def _crawl(directory):
     source = FileSource(directory)
     return run_crawl(source, source.origin)
 
+
+
+class ASubCheckReportsWhetherItRan(unittest.TestCase):
+    """U9: `required_surfaces_met: true` beside `passed: false` was an overclaim.
+
+    A plan that never mentions a key cannot be reported as passing the check for it, and must not
+    be reported as failing it either. Three outcomes, because two would force one of two lies.
+    """
+
+    def plan_block(self, plan):
+        report = report_for()
+        apply_to_report(check_plan(report, plan), report)
+        return report.plan
+
+    def test_a_check_that_ran_and_passed_is_true(self):
+        block = self.plan_block({"plan_version": 1, "required_surfaces": ["robots.txt"]})
+        self.assertIs(block["required_surfaces_met"], True)
+
+    def test_a_check_that_ran_and_failed_is_false(self):
+        block = self.plan_block({"plan_version": 1, "required_surfaces": ["security.txt"]})
+        self.assertIs(block["required_surfaces_met"], False)
+
+    def test_a_check_that_never_ran_is_neither(self):
+        block = self.plan_block({"plan_version": 1, "kind": "saas"})
+        self.assertIsNone(
+            block["required_surfaces_met"],
+            "a check that did not run must not be reported as passing",
+        )
+        self.assertIsNone(block["identity_schema_types_met"])
+
+    def test_a_malformed_plan_reports_no_sub_check_as_met(self):
+        # The reported defect: passed false while a sub-check claimed true.
+        block = self.plan_block({"kind": "saas"})
+        self.assertFalse(block["passed"])
+        self.assertIsNone(block["required_surfaces_met"])
+        self.assertIsNone(block["identity_schema_types_met"])
+
+    def test_no_sub_check_claims_true_when_the_plan_did_not_pass(self):
+        for plan in ({"plan_version": 99}, {}, {"plan_version": 1, "identity": "not an object"}):
+            with self.subTest(plan=plan):
+                block = self.plan_block(plan)
+                if block["passed"]:
+                    continue
+                self.assertIsNot(block["required_surfaces_met"], True, plan)
+                self.assertIsNot(block["identity_schema_types_met"], True, plan)

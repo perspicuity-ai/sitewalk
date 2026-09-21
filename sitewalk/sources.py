@@ -21,11 +21,12 @@ from .urls import normalise
 
 
 class PageSource(Protocol):
-    """What the crawl needs from a source, and nothing more."""
+    """What the crawl needs from a source, and nothing more.
 
-    kind: str
-    #: A description of what was read, for the report's first line.
-    label: str
+    ``kind`` and ``label`` are read by the crawl for the report's first line. A source that does
+    not supply them gets an empty string rather than an error, because a test double should not
+    have to implement reporting to be a source.
+    """
 
     def fetch(self, url: str) -> Page: ...
 

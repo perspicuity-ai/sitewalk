@@ -22,9 +22,3 @@ class GuardError(SitewalkError):
 class FetchError(SitewalkError):
     """A request was permitted but did not complete."""
 
-
-class PlanError(SitewalkError):
-    """A plan file could not be read or could not be understood at all.
-
-    A plan that is readable but violated is a *finding*, not this.
-    """

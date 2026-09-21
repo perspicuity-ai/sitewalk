@@ -27,7 +27,7 @@ source, and that is the central structural decision:
 `--dir` is the deploy gate, so what it reports must be exactly what `--url` would have reported
 about the same bytes. Two code paths would let the gate and the live check drift, and the drift
 would be invisible until a release passed a gate that no longer measured the thing it was
-trusted for. The source is a small protocol — `read(path) -> Page`, `exists(path) -> bool` —
+trusted for. The source is a small protocol — `fetch(url) -> Page`, `exists(url) -> bool` —
 with an HTTP implementation and a filesystem implementation, both exercised by the same tests
 against the same fixtures.
 *Rejected:* a `--dir` mode that runs only the offline-cheap subset of checks (the "does it exist"
@@ -148,7 +148,7 @@ formats this tool reads.
 
 The tool never executes JavaScript, so a page whose content arrives after load looks empty. It
 reports `looks_script_rendered: true` with the evidence (`visible_text_chars`, `script_bytes`,
-`app_root_markers`) and the report says, in words, that the tool does not execute JavaScript and
+`app_root_element`) and the report says, in words, that the tool does not execute JavaScript and
 that the length is not evidence the page is empty.
 
 Rejected: **silence**, i.e. reporting `visible_text: 0` with no qualifier. That is the failure

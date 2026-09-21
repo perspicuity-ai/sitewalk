@@ -444,16 +444,32 @@ class TheRobotsSkipIsUnmissable(unittest.TestCase):
         self.assertEqual(skipped[0]["path"], "/private/")
         self.assertIn("Disallow:", skipped[0]["rule"])
 
+    #: The Disallow line exactly as it stands in the fixture, written out here rather than read
+    #: from it, so this test compares the report against an independent statement of the line.
+    FIXTURE_LINE = "  Disallow:   /private/   # legacy, revisit"
+
     def test_the_quoted_rule_is_byte_identical_to_the_fixture_line(self):
-        # The requirement: take the rule out of the report, search the file, find it. Asserted as
-        # equality against the source line, not as membership, because the parser's stripped
-        # variable is a substring of the source line and a membership test would pass on it.
+        """Equality, not membership.
+
+        An earlier version of this test asserted `rule in robots_text` and then checked two
+        properties of `rule`. That passes for `rule == source_line + "\n"`, and for any superset of
+        the line, so it did not assert the byte-identity its name claimed — the third appearance in
+        this project of a test that cannot fail. Only `test_sitemap.py`'s verbatim test caught it.
+        """
         from sitewalk.report import to_dict
 
         rule = to_dict(self.report)["skipped_robots"][0]["rule"]
-        self.assertIn(rule, self.robots_text)
-        self.assertIn("# legacy, revisit", rule)
-        self.assertTrue(rule.startswith("  "), "leading whitespace was normalised away")
+        self.assertEqual(rule, self.FIXTURE_LINE)
+        # And the file it came from still contains that exact line, so the quote is searchable.
+        self.assertIn(self.FIXTURE_LINE + "\n", self.robots_text)
+
+    def test_the_quote_carries_no_newline(self):
+        # A quote with a terminator would not be byte-identical to anything a reader can select.
+        from sitewalk.report import to_dict
+
+        rule = to_dict(self.report)["skipped_robots"][0]["rule"]
+        self.assertNotIn("\n", rule)
+        self.assertEqual(rule, rule.rstrip("\n"))
 
     def test_the_note_also_carries_the_quoted_rule(self):
         from sitewalk.report import to_text

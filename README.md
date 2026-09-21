@@ -47,7 +47,7 @@ root, or put the repository root on `PYTHONPATH`.
 
 ```sh
 python3 -m sitewalk --dir build/                 # read the report
-python3 -m sitewalk --dir build/ --strict; echo $?   # 1 if an error finding exists, for CI
+python3 -m sitewalk --dir build/ --strict; echo $?   # 1 if an error or conditional finding exists
 python3 -m sitewalk --dir build/ --json > site.json
 ```
 
@@ -148,7 +148,7 @@ received no requests across 137,000 sites
 | `--url URL` | — | Crawl a live site, staying inside its origin |
 | `--plan FILE` | — | Check the site against a `siteplan` file |
 | `--json` | off | Machine-readable report on stdout instead of the text report |
-| `--strict` | off | Exit 1 when an error-severity finding exists |
+| `--strict` | off | Exit 1 when an **error or conditional** finding exists, so CI can gate on it |
 | `--max-pages N` | 50 | The bound on how many pages are read. It is the only bound on what is read |
 | `--timeout S` | 10 | Per-request timeout |
 | `--max-body BYTES` | 2097152 | Body cap; a longer body is truncated and the report says so |
@@ -156,8 +156,8 @@ received no requests across 137,000 sites
 | `--user-agent S` | `Sitewalk/<version>` | The client identification sent |
 | `--version` | — | Print the version and exit |
 
-Exit status: **0** normally, **1** under `--strict` when an error finding exists, **2** when the
-run could not be made at all — a bad argument, an unreadable directory, or a plan file that could
+Exit status: **0** normally; **1** under `--strict` when a finding of severity `error` **or**
+`conditional` exists; **2** when the run could not be made at all — a bad argument, an unreadable directory, or a plan file that could
 not be read.
 
 ## Tests

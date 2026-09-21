@@ -34,7 +34,9 @@ find, trust or recommend a site, and it measures no ranking, citation or traffic
 EPILOG = """\
 exit status:
   0   the run completed
-  1   under --strict, at least one error-severity finding was reported
+  1   under --strict, at least one finding of severity error or conditional was reported. Both
+      gate: an error is something wrong with the site, and a conditional verdict is one the tool
+      cannot support — an unknown plan version, or a surface it has no check for
   2   the run could not be made: a bad argument, an unreadable directory, or a plan file that
       could not be read. A gate that cannot read its own plan must not report a pass.
 
@@ -74,7 +76,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="exit 1 when an error-severity finding exists, so CI can gate on it",
+        help="exit 1 when a gating finding exists (severity error or conditional), so CI can gate on it",
     )
     parser.add_argument("--max-pages", type=int, default=50, metavar="N", help="crawl bound (default 50)")
     parser.add_argument(

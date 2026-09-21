@@ -15,7 +15,7 @@ from collections import Counter
 from typing import Iterable
 
 from .crawl import CrawlResult
-from .facts import ERROR, INFO, Finding, PageFact, SiteReport
+from .facts import DERIVED, ERROR, INFO, Finding, PageFact, SiteReport
 from .pages import SCRIPT_SHELL_TEXT_CHARS
 from .urls import origin_of, relative_path
 
@@ -298,6 +298,18 @@ def analyse(result: CrawlResult) -> SiteReport:
     # -- surfaces ----------------------------------------------------------------------------
     for name, surface in sorted(result.surfaces.items()):
         if surface.exists:
+            continue
+        if surface.state == DERIVED:
+            # Never fetched, so there is no response to report. Saying "no response" would assert
+            # a request that did not happen: the machine layer is right (state `derived`) and this
+            # is the human layer overclaiming.
+            _add(
+                report,
+                "surface_missing",
+                f"{name} was not found in the pages read; it is derived from page contents "
+                "rather than fetched, and the surfaces table says what was read",
+                subject=name,
+            )
             continue
         message = f"{name} was not found ({surface.status or surface.error or 'no response'})"
         if name == "llms.txt":

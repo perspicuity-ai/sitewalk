@@ -225,6 +225,37 @@ Rejected: **failing on unknown keys.** It forces lockstep releases between two d
 independent projects. Rejected: **coercing every list-valued key**, which is how a malformed plan
 becomes a met plan.
 
+### D9b. Four surface states, and every vocabulary surface is checked
+
+`required_surfaces` is the format's closed vocabulary of five. Two of them this tool originally
+could not check, and the plan check reported them **absent**: `the plan requires rss.xml, which the
+site does not publish`, for a file it never looked for. That asserted something the code never
+established, so the vocabulary is now fully covered:
+
+* `robots.txt`, `sitemap.xml`, `llms.txt`, `rss.xml` — fetched at the site root. One request each,
+  in the loop that already existed; adding `rss.xml` was one name in `SURFACE_PATHS`.
+* `json-ld` — **not a URL**. It is derived from `PageFact.json_ld_types`, a fact already held and
+  previously used only for a count. No request.
+
+**The four states are a discriminator, not a pair of nulls.** A `Surface` carrying only a `url` and
+a `status` cannot represent a derived surface, and an entry with both null reads as *fetched and
+learned nothing* — a different and worse claim than *never fetched*. So `Surface.state` is one of
+`present`, `absent`, `derived`, `not_checked`, and `exists` is derived from it so the two cannot
+disagree. A derived surface also carries `established`, because otherwise "derived" would have to
+mean "exists" and **every site would appear to publish JSON-LD** — which is the bug the first
+implementation had, caught by asserting the bare fixture's derived surface is False.
+
+`not_checked` is unreachable through a real name today, so the tests inject it by removing a surface
+from `CHECKED_SURFACES`. The rule is not retired by covering the vocabulary: a sixth surface added
+to the format reopens the gap, and `test_every_vocabulary_surface_is_checked_now` fails when it
+does, which is what keeps the unverified path honest rather than vestigial.
+
+Rejected: **narrowing the vocabulary to what this tool checks.** `required_surfaces` describes what
+a plan may legitimately require, not what one consumer happens to look for; a site with an RSS feed
+is a normal site, and deleting a real requirement to accommodate a gap in the consumer is the wrong
+end of the problem. Rejected: **a synthetic `Surface` with an empty URL and status.** It cannot be
+told from a fetch that returned nothing.
+
 ### D10. Findings have severities, and the gate is a policy over them
 
 **The report states what is true; the gate decides what is tolerable.** Three severities, defined

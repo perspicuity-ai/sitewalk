@@ -404,9 +404,39 @@ class TheVerdictIsHonestAboutWhatItKnows(unittest.TestCase):
                 self.assertEqual(counts["conditional"] - baseline["conditional"], conditional, plan)
 
 
+class EveryVocabularySurfaceHasACheck(unittest.TestCase):
+    """U8's claim, and the guard against a future surface arriving in the format unchecked."""
+
+    def test_every_vocabulary_surface_is_checked_now(self):
+        from sitewalk.plan import CHECKED_SURFACES, KNOWN_SURFACES
+
+        self.assertEqual(
+            set(KNOWN_SURFACES),
+            set(CHECKED_SURFACES),
+            "a surface is in the format's vocabulary but this consumer does not check it, so the "
+            "unverified path is reachable again and U7's fifth criterion applies to it",
+        )
+
+
 class AnUncheckedSurfaceIsUnverifiedNotAbsent(unittest.TestCase):
-    """U7's fifth criterion. `rss.xml` and `json-ld` are in the format's closed vocabulary and this
-    consumer has no check for them, so it must not claim the site lacks them."""
+    """U7's fifth criterion, still live now that U8 added the last two checks.
+
+    U8 implemented `rss.xml` and `json-ld`, so every surface in the format's vocabulary is now
+    checked and the gap cannot be reached through a real name. The rule is not retired by that: a
+    sixth surface added to the format reopens it. So the gap is injected here, deliberately, by
+    taking one surface out of the checked set — which is also the test that fails if someone later
+    adds a surface to the vocabulary without a check and without noticing.
+    """
+
+    def setUp(self):
+        import sitewalk.plan as plan_module
+
+        self.plan_module = plan_module
+        self.original = plan_module.CHECKED_SURFACES
+        self.addCleanup(setattr, plan_module, "CHECKED_SURFACES", self.original)
+        plan_module.CHECKED_SURFACES = tuple(
+            name for name in self.original if name != "rss.xml"
+        )
 
     def test_a_vocabulary_surface_with_no_check_is_unverified(self):
         check = check_plan(report_for(), {"plan_version": 1, "required_surfaces": ["rss.xml"]})
@@ -434,15 +464,6 @@ class AnUncheckedSurfaceIsUnverifiedNotAbsent(unittest.TestCase):
         message = [f.message for f in report.findings if f.kind == "plan_surface_unverified"][0]
         self.assertIn("no check for", message)
         self.assertNotIn("does not publish", message)
-
-    def test_a_checked_surface_that_is_genuinely_absent_is_still_unmet(self):
-        # The distinction must not soften a real finding: a missing robots.txt is a fact.
-        report = findings.analyse(_crawl(FIXTURES / "bare-site"))
-        apply_to_report(
-            check_plan(report, {"plan_version": 1, "required_surfaces": ["robots.txt"]}), report
-        )
-        self.assertIn("plan_surface_missing", [f.kind for f in report.errors])
-        self.assertNotIn("plan_surface_unverified", [f.kind for f in report.findings])
 
     def test_a_name_outside_the_vocabulary_is_neither_checked_nor_claimed_unverified(self):
         # `security.txt` is not a surface of this format, so there is no check to be missing.

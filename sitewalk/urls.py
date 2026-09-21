@@ -10,7 +10,7 @@ from __future__ import annotations
 from urllib.parse import urldefrag, urljoin, urlsplit, urlunsplit
 
 #: Paths that are never crawled as pages. They are read as surfaces where that is their role.
-SURFACE_PATHS = ("robots.txt", "sitemap.xml", "llms.txt")
+SURFACE_PATHS = ("robots.txt", "sitemap.xml", "llms.txt", "rss.xml")
 
 
 def origin_of(url: str) -> str:

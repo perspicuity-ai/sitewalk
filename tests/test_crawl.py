@@ -120,7 +120,7 @@ class Discovery(unittest.TestCase):
         )
         result, _source = run(http)
         self.assertTrue(any("off the origin" in note for note in result.notes))
-        self.assertEqual(http.paths_requested, ["/robots.txt", "/sitemap.xml", "/llms.txt", "/"])
+        self.assertEqual(http.paths_requested, ["/robots.txt", "/sitemap.xml", "/llms.txt", "/rss.xml", "/"])
 
 
 class StayingInsideTheOrigin(unittest.TestCase):

@@ -92,11 +92,27 @@ The verdict depends on what this tool actually knows:
 | `plan_version` 1, or older | `met` — an older plan is fully specified by its own version | as the findings dictate |
 | A **newer or unknown** `plan_version` | `met with conditions` — the file may be valid against a specification this tool does not hold, so a key's meaning may have moved | **exits 1** |
 | An **absent or mistyped** `plan_version` | `not met` — the file is malformed, and with no usable version no key can be trusted | **exits 1** |
-| A required surface in the format's vocabulary that this tool has **no check for** (today `rss.xml`, `json-ld`) | `met with conditions` — reported **unverified**, never absent | **exits 1** |
+| A required surface this tool has **no check for** | `met with conditions` — reported **unverified**, never absent | **exits 1** |
 | An unknown key | ignored, **and named**, so a `met` never hides something that was not checked | not on its own |
 
-"Not found" and "not checked" are different claims and the output keeps them apart: a required
-surface this tool cannot look for is *unverified*, not missing. A consumer that rejects a growing
+This tool checks all five surfaces the format's vocabulary defines — `robots.txt`, `sitemap.xml`,
+`llms.txt` and `rss.xml` by fetching them, and `json-ld` by reading the pages it already has. So no
+plan can ask for something the gate cannot certify today. If the format adds a sixth, the gap
+reopens and the rule still holds: an unverifiable surface is reported *unverified* and gates under
+`--strict` rather than passing silently.
+
+"Not found" and "not checked" are different claims and the output keeps them apart. Each surface
+carries a machine-readable state, so a JSON consumer never has to infer one from a message:
+
+| State | Meaning |
+| --- | --- |
+| `present` | Fetched, and the site publishes it |
+| `absent` | Fetched, and the site does not publish it |
+| `derived` | Not fetched — there is nothing to fetch; established from pages already read, as `json-ld` is |
+| `not_checked` | This tool has no check for it |
+
+`rss.xml` is reported like the other surfaces and is **not** an error when a site has no feed:
+only a plan that requires one makes it a finding. A consumer that rejects a growing
 format breaks the producer, so an unknown key is read and disclosed rather than refused. A plan
 that cannot be read at all exits 2 — a gate that cannot read its own plan must not report a pass.
 

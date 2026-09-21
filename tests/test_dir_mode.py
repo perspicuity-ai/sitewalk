@@ -24,6 +24,7 @@ from sitewalk.crawl import crawl
 from sitewalk.facts import Page
 from sitewalk.pages import content_type_of
 from sitewalk.sources import FileSource
+from sitewalk.urls import SURFACE_PATHS
 
 from . import fakes
 from .fakes import FIXTURES
@@ -273,7 +274,7 @@ class TheOfflineCrawl(unittest.TestCase):
         result = dir_crawl()
         # Twelve distinct URLs exist; the crawl reads each at most once.
         self.assertEqual(len(result.pages), len({fact.url for fact in result.pages}))
-        self.assertLessEqual(result.requests_made, len(result.pages) + 3)
+        self.assertLessEqual(result.requests_made, len(result.pages) + len(SURFACE_PATHS))
 
 
 class DirAndUrlAgreeOnTheSameBytes(unittest.TestCase):
@@ -467,3 +468,124 @@ class TheRobotsSkipIsUnmissable(unittest.TestCase):
 
         report = findings.analyse(dir_crawl(BARE))
         self.assertNotIn("excluded:", to_text(report).split("claim boundary")[0])
+
+
+class TheFourSurfaceStatesAreDistinguishable(unittest.TestCase):
+    """U8: a machine reader must tell the states apart without reading a message string.
+
+    A surface that was fetched and not found is a fact about the site. A surface established from
+    pages already read was never fetched. A surface this tool cannot check is a gap here. Collapsing
+    any two of them produces the overclaim these states exist to prevent.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.report = findings.analyse(dir_crawl())
+
+    def states(self):
+        from sitewalk.report import to_dict
+
+        return {name: surface["state"] for name, surface in to_dict(self.report)["surfaces"].items()}
+
+    def test_every_state_is_present_in_one_run(self):
+        # One run of one fixture exercises all four, so a change that collapses any two is visible.
+        states = self.states()
+        self.assertEqual(states["robots.txt"], "present")
+        self.assertEqual(states["rss.xml"], "absent")
+        self.assertEqual(states["json-ld"], "derived")
+        self.assertEqual(set(states.values()), {"present", "absent", "derived"})
+
+    def test_the_not_checked_state_is_reachable_and_named(self):
+        # No surface in the format's vocabulary is unchecked today, so the state is asserted by
+        # constructing it rather than by finding it in this fixture.
+        from sitewalk.facts import NOT_CHECKED, Surface
+
+        self.assertFalse(Surface(name="x", state=NOT_CHECKED).exists)
+        self.assertIn("not_checked", to_dict_states())
+
+    def test_absent_and_derived_are_not_the_same_state(self):
+        states = self.states()
+        self.assertNotEqual(states["rss.xml"], states["json-ld"])
+
+    def test_the_states_are_not_inferred_from_exists(self):
+        # `exists` alone cannot separate absent-and-fetched from derived: both are False for a
+        # missing thing and True for a found one. The state is the discriminator.
+        from sitewalk.report import to_dict
+
+        surfaces = to_dict(self.report)["surfaces"]
+        self.assertFalse(surfaces["rss.xml"]["exists"])
+        self.assertTrue(surfaces["json-ld"]["exists"])
+        self.assertNotEqual(surfaces["rss.xml"]["state"], surfaces["json-ld"]["state"])
+
+    def test_a_derived_surface_reports_what_it_was_derived_from(self):
+        from sitewalk.report import to_dict
+
+        surface = to_dict(self.report)["surfaces"]["json-ld"]
+        self.assertIsNone(surface["url"] or None)
+        self.assertEqual(surface["status"], 0)
+        self.assertIn("4 of", surface["note"])
+
+    def test_json_ld_absence_is_reported_by_a_derived_surface(self):
+        # The bug this caught: `exists` returned True for every derived surface, so every site
+        # appeared to publish JSON-LD. The bare fixture carries none.
+        report = findings.analyse(dir_crawl(BARE))
+        surface = report.surfaces["json-ld"]
+        self.assertEqual(surface.state, "derived")
+        self.assertFalse(surface.exists)
+
+    def test_the_run_states_its_state_vocabulary(self):
+        from sitewalk.report import to_dict, to_text
+
+        self.assertEqual(
+            set(to_dict(self.report)["surface_states"]),
+            {"present", "absent", "derived", "not_checked"},
+        )
+        self.assertIn("derived = established from pages read", to_text(self.report))
+
+
+def to_dict_states():
+    from sitewalk.report import to_dict
+
+    return to_dict(findings.analyse(dir_crawl()))["surface_states"]
+
+
+class ARssFeedIsCheckedLikeAnyOtherSurface(unittest.TestCase):
+    def test_a_site_publishing_a_feed_meets_a_plan_that_requires_one(self):
+        from sitewalk.plan import check_plan
+
+        feed = "<?xml version='1.0'?><rss version='2.0'><channel><title>F</title></channel></rss>"
+        http = fakes.FakeHTTP(routes={})
+        http.add("/", "<title>Home</title>")
+        http.add("/rss.xml", feed, content_type="application/rss+xml")
+        source = fakes.live_source(http, origin="https://example.com")
+        with fakes.fake_network(http):
+            result = crawl(source, "https://example.com")
+        report = findings.analyse(result)
+        self.assertTrue(report.surfaces["rss.xml"].exists)
+        check = check_plan(report, {"plan_version": 1, "required_surfaces": ["rss.xml"]})
+        self.assertEqual(check.verdict, "met")
+
+    def test_a_site_without_a_feed_does_not_meet_it(self):
+        from sitewalk.plan import check_plan
+
+        report = findings.analyse(dir_crawl(BARE))
+        check = check_plan(report, {"plan_version": 1, "required_surfaces": ["rss.xml"]})
+        self.assertEqual(check.verdict, "not met")
+        self.assertEqual(check.unmet_surfaces, ["rss.xml"])
+
+    def test_json_ld_is_met_from_the_pages_already_read_with_no_extra_request(self):
+        from sitewalk.plan import check_plan
+
+        with fakes.no_network():
+            source = FileSource(EXAMPLE)
+            result = crawl(source, source.origin)
+        report = findings.analyse(result)
+        check = check_plan(report, {"plan_version": 1, "required_surfaces": ["json-ld"]})
+        self.assertEqual(check.verdict, "met")
+        # The fact came from the pages, so the surface is derived rather than fetched: no URL and
+        # no status, and no request was made for a path that does not exist.
+        surface = result.surfaces["json-ld"]
+        self.assertEqual(surface.state, "derived")
+        self.assertEqual(surface.url, "")
+        self.assertEqual(surface.status, 0)
+        self.assertNotIn("/json-ld", " ".join(f.url for f in result.pages))

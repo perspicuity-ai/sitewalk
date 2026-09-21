@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .facts import CONDITIONAL, ERROR, Finding, SiteReport
+from .facts import CONDITIONAL, ERROR, NOT_CHECKED, Finding, SiteReport
 from .urls import relative_path
 
 #: Keys the format defines at the top level, and whether this consumer enforces them.
@@ -43,7 +43,7 @@ KNOWN_KEYS: dict[str, str] = {
 SUPPORTED_PLAN_VERSION = 1
 
 #: The surfaces this consumer can actually check.
-CHECKED_SURFACES = ("robots.txt", "sitemap.xml", "llms.txt")
+CHECKED_SURFACES = ("robots.txt", "sitemap.xml", "llms.txt", "rss.xml", "json-ld")
 
 #: The format's closed vocabulary for ``required_surfaces``. A name in here that this consumer
 #: cannot check is a gap here, reported as unverified. A name *outside* it is not a surface of this
@@ -190,9 +190,9 @@ def check_plan(report: SiteReport, plan: dict[str, Any], path: str = "") -> Plan
                     check.unmet_surfaces.append(name)
                     continue
                 surface = report.surfaces.get(name)
-                if surface is None:
-                    # Checked for, but the crawl did not record it. Treated as unverified rather
-                    # than absent, because absent means a fetch was attempted and failed.
+                if surface is None or surface.state == NOT_CHECKED:
+                    # Not looked at. Unverified, never absent: absent means a fetch was attempted
+                    # and failed, and this is the case where nothing was attempted at all.
                     check.unverified_surfaces.append(name)
                 elif not surface.exists:
                     check.unmet_surfaces.append(name)

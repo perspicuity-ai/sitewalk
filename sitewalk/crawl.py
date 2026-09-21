@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from . import sitemap
-from .facts import Page, PageFact, Skip, Surface
+from .facts import ABSENT, DERIVED, PRESENT, Page, PageFact, Skip, Surface
 from .pages import facts_from
 from .sources import PageSource
 from .urls import SURFACE_PATHS, normalise, origin_of, relative_path, same_origin
@@ -62,8 +62,8 @@ def _surface(name: str, url: str, page: Page) -> Surface:
     body_bytes = len(page.body.encode("utf-8", errors="replace")) if page.body is not None else 0
     return Surface(
         name=name,
+        state=PRESENT if page.ok else ABSENT,
         url=url,
-        exists=page.ok,
         status=page.status,
         content_type=page.content_type,
         bytes=body_bytes,
@@ -240,6 +240,20 @@ def crawl(
             filter(None, [fact.note, "reached by the link check, not crawled as a page"])
         )
         result.pages.append(fact)
+    # 5. json-ld is not a URL and cannot be fetched: it is established from the pages already
+    #    read. Recorded as a derived surface so a plan requiring it gets a real verdict, and so a
+    #    reader can tell "derived" from "fetched and empty".
+    carrying = [fact.url for fact in result.pages if fact.json_ld_types]
+    result.surfaces["json-ld"] = Surface(
+        name="json-ld",
+        state=DERIVED,
+        established=bool(carrying),
+        note=(
+            f"derived from the JSON-LD @type values of the pages read: "
+            f"{len(carrying)} of {len(result.pages)} carry one"
+        ),
+    )
+
     result.refused = list(getattr(source, "refusals", ()))
     result.finished_at = _stamp()
     return result

@@ -93,11 +93,26 @@ class EveryPromisedFindingIsProduced(unittest.TestCase):
         self.assertTrue(any("/services/missing/" in message for message in messages))
         self.assertTrue(any("/broken/" in message for message in messages))
 
-    def test_the_existence_of_the_three_surfaces(self):
+    def test_the_existence_of_the_surfaces_the_specification_names(self):
+        # The three the principal's specification names, plus the two U8 added so a plan requiring
+        # any of the format's five can get a real verdict.
         self.assertEqual(
             {name: surface.exists for name, surface in self.report.surfaces.items()},
-            {"robots.txt": True, "sitemap.xml": True, "llms.txt": True},
+            {
+                "robots.txt": True,
+                "sitemap.xml": True,
+                "llms.txt": True,
+                "rss.xml": False,
+                "json-ld": True,
+            },
         )
+
+    def test_a_missing_rss_feed_is_a_note_not_an_error(self):
+        # rss.xml is not one of the surfaces the specification requires, so a site without one is
+        # not defective. Only a plan that requires it makes it a finding.
+        notes = [f.message for f in self.report.infos if f.kind == "surface_missing"]
+        self.assertTrue(any("rss.xml" in message for message in notes), notes)
+        self.assertFalse([f for f in self.report.errors if "rss.xml" in f.message])
 
     def test_a_missing_surface_is_a_note(self):
         report = findings.analyse(offline_result(FIXTURES / "bare-site"))

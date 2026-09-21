@@ -92,17 +92,50 @@ class PageFact:
         return 200 <= self.status < 300
 
 
+#: The four states a surface can be in. They are distinct because a reader must be able to tell
+#: "we looked and it is not there" from "we cannot look":
+#:
+#: * ``present``     — fetched, 2xx. The site publishes it.
+#: * ``absent``      — fetched, non-2xx. The site does not publish it.
+#: * ``derived``     — not fetched and nothing to fetch; established from pages already read, as
+#:                     ``json-ld`` is. Reporting this with an empty URL and status would read as
+#:                     "we fetched it and learned nothing", which is a different and worse claim.
+#: * ``not_checked`` — this consumer has no check for it. A gap here, never a finding about the site.
+PRESENT = "present"
+ABSENT = "absent"
+DERIVED = "derived"
+NOT_CHECKED = "not_checked"
+
+
 @dataclass
 class Surface:
-    """An optional machine-readable file at the site root, and whether it exists."""
+    """A machine-readable surface a plan may require, and what this run knows about it.
+
+    ``state`` is the discriminator a machine reads; ``exists`` is derived from it so the two can
+    never disagree. ``url`` and ``status`` are meaningful only for the fetched states, and a
+    ``derived`` surface carries a ``note`` saying what it was derived from.
+    """
 
     name: str
-    url: str
-    exists: bool = False
+    state: str = NOT_CHECKED
+    url: str = ""
     status: int = 0
     content_type: str = ""
     bytes: int = 0
     error: str | None = None
+    note: str | None = None
+    #: For a ``derived`` surface only: whether the fact it is derived from was actually found.
+    #: Without it, "derived" would have to mean "exists", and every site would appear to publish
+    #: JSON-LD — the same overclaim the states exist to prevent.
+    established: bool = False
+
+    @property
+    def exists(self) -> bool:
+        if self.state == PRESENT:
+            return True
+        if self.state == DERIVED:
+            return self.established
+        return False
 
 
 @dataclass

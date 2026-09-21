@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .facts import ERROR, SiteReport
+from .facts import DERIVED, ERROR, NOT_CHECKED, SiteReport
 from .urls import relative_path
 
 BOUNDARY = (
@@ -52,6 +52,12 @@ def to_dict(report: SiteReport) -> dict[str, Any]:
         "started_at": report.started_at,
         "finished_at": report.finished_at,
         "claim_boundary": BOUNDARY,
+        "surface_states": {
+            "present": "fetched and published",
+            "absent": "fetched and not published",
+            "derived": "not fetched; established from pages already read",
+            "not_checked": "this tool has no check for it",
+        },
         "not_measured": [
             "ranking",
             "citations",
@@ -73,12 +79,14 @@ def to_dict(report: SiteReport) -> dict[str, Any]:
         },
         "surfaces": {
             name: {
+                "state": surface.state,
                 "url": surface.url,
                 "exists": surface.exists,
                 "status": surface.status,
                 "content_type": surface.content_type,
                 "bytes": surface.bytes,
                 "error": surface.error,
+                "note": surface.note,
             }
             for name, surface in sorted(report.surfaces.items())
         },
@@ -215,10 +223,18 @@ def to_text(report: SiteReport) -> str:
         lines.append(f"  {status:<12} {count}")
 
     lines.append(_rule("Surfaces"))
+    lines.append(
+        "  state: present = published; absent = looked for and not there; derived = established "
+        "from pages read, not fetched; not_checked = this tool has no check"
+    )
     for name, surface in sorted(report.surfaces.items()):
-        state = "present" if surface.exists else "missing"
-        detail = f"status {surface.status}" if surface.status else (surface.error or "no response")
-        lines.append(f"  {name:<12} {state:<8} {detail}")
+        if surface.state == DERIVED:
+            detail = surface.note or "derived from pages already read"
+        elif surface.state == NOT_CHECKED:
+            detail = "this tool has no check for it"
+        else:
+            detail = f"status {surface.status}" if surface.status else (surface.error or "no response")
+        lines.append(f"  {name:<12} {surface.state:<11} {detail}")
 
     if report.json_ld_type_counts:
         lines.append(_rule("JSON-LD types across the site"))

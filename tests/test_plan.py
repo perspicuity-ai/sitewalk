@@ -153,9 +153,55 @@ class Leniency(unittest.TestCase):
         self.assertTrue(any("plan_version" in note for note in check.notes))
 
     def test_a_plan_version_this_consumer_does_not_know_is_a_note_not_a_failure(self):
+        # Q3, decided by the principal on 2026-09-21: a consumer that rejects an unfamiliar
+        # version or key breaks the producer every time the format grows.
         check = check_plan(report_for(), {"plan_version": 99, "required_surfaces": ["robots.txt"]})
         self.assertTrue(check.passed)
-        self.assertTrue(any("plan_version" in note for note in check.notes))
+        note = " ".join(check.notes)
+        self.assertIn("plan_version", note)
+        self.assertIn("not rejected", note)
+
+    def test_an_older_plan_version_is_read_the_same_way(self):
+        check = check_plan(report_for(), {"plan_version": 0, "required_surfaces": ["robots.txt"]})
+        self.assertTrue(check.passed)
+        self.assertTrue(any("not rejected" in note for note in check.notes))
+
+    def test_the_note_says_a_met_result_does_not_mean_the_whole_plan_was_verified(self):
+        check = check_plan(report_for(), {"plan_version": 99})
+        self.assertTrue(any("does not mean the whole plan was verified" in n for n in check.notes))
+
+    def test_a_plan_with_no_version_is_read_anyway(self):
+        check = check_plan(report_for(), {"required_surfaces": ["robots.txt"]})
+        self.assertTrue(check.passed)
+        self.assertFalse(check.problems)
+        self.assertTrue(any("names no plan_version" in note for note in check.notes))
+
+    def test_an_unfamiliar_version_still_enforces_the_keys_it_knows(self):
+        # Leniency about the version is not leniency about the checks: an unmet surface must
+        # still gate even when the plan was written by a newer producer.
+        check = check_plan(report_for(), {"plan_version": 99, "required_surfaces": ["security.txt"]})
+        self.assertEqual(check.unmet_surfaces, ["security.txt"])
+        self.assertFalse(check.passed)
+
+    def test_a_key_of_the_wrong_type_is_a_problem_not_a_crash(self):
+        for plan in (
+            {"required_surfaces": 5},
+            {"required_surfaces": [1, 2]},
+            {"identity": "not an object"},
+            {"identity": {"schema_types": "Organization"}},
+        ):
+            with self.subTest(plan=plan):
+                check = check_plan(report_for(), plan)
+                self.assertTrue(check.problems, f"{plan} produced no problem")
+
+    def test_an_unknown_key_never_fails_the_check(self):
+        check = check_plan(
+            report_for(),
+            {"plan_version": 1, "required_surfaces": ["robots.txt"], "invented": [1, 2, 3]},
+        )
+        self.assertFalse(check.problems)
+        self.assertTrue(check.passed)
+        self.assertTrue(any("invented" in note for note in check.notes))
 
     def test_the_full_plan_from_the_siteplan_context_is_met_by_a_conforming_site(self):
         check = check_plan(report_for(), FULL_PLAN)

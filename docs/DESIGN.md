@@ -52,12 +52,12 @@ rather than hidden: see D6.
 
 | Measurement | Value | Where it is used |
 | --- | --- | --- |
-| Requests per run, worst case | `1 (robots) + 1 (sitemap) + min(links, 5) (nested sitemaps) + max-pages + max-link-checks` | D7, bounds |
+| Requests per run, worst case | `1 (robots) + 1 (sitemap) + min(links, 5) (nested sitemaps) + max-pages` | D7, bounds |
 | Default delay between requests | 0.2 s | D7 |
 | Default per-request timeout | 10 s | D7 |
 | Default body cap | 2 MiB (truncated, and said so) | D7 |
 | Default crawl bound | 50 pages | D7 |
-| Default link-check bound | 20 uncrawled targets | D7 |
+| Bounds on what is read | `--max-pages` is the only one; there is no separate link-check bound | D7 |
 | Text that looks script-rendered | `visible_text < 200` chars **and** (`script_bytes ≥ 5000` **or** an empty app-root marker) | D6 |
 | Python floor | 3.11 — the principal's specification; confirmed present as 3.11.3 | D3 |
 
@@ -156,10 +156,17 @@ Rejected: **a headless browser**. A dependency, a security surface, and a differ
 
 ### D7. Bounds are explicit, defaulted, and reported
 
-`--max-pages 50`, `--timeout 10`, `--max-body 2097152`, `--delay 0.2`, `--max-link-checks 20`.
-The delay is applied between requests to the same host, including the `robots.txt` and sitemap
-requests. Every bound is reported in the JSON output under `limits`, and a truncated body or a
-reached page cap is a finding, not a silent stop.
+`--max-pages 50`, `--timeout 10`, `--max-body 2097152`, `--delay 0.2`. The delay is applied
+between requests to the same host, including the `robots.txt` and sitemap requests. Every bound is
+reported in the JSON output under `limits`, and a truncated body or a reached page cap is a
+finding, not a silent stop.
+
+**`--max-pages` is the only bound on what is read.** An earlier revision had a second flag,
+`--max-link-checks 20`, and it was removed during U1 because it was unreachable: the crawl loop
+already fetches every internal link target it can reach, so it answers the link question for each
+of them, and the separate link-check pass only ever had work left when the page bound had already
+stopped the crawl. A flag that cannot change the outcome is worse than no flag, because it reads
+as a guarantee. What is left unchecked is named in the notes, with the remedy (`--max-pages`).
 
 Rejected: **no delay**. A tool meant to be run by strangers against sites they may not own should
 be the politest thing on the network.
@@ -169,31 +176,53 @@ meaningless; a 50-page crawl is not slow enough to justify it.
 ### D8. `robots.txt` is obeyed for live crawls
 
 `Disallow` rules that apply to our user agent (`*` or `sitewalk`) stop a path from being fetched;
-the path is recorded as skipped, and a sitemap URL that was skipped counts as never reached. For
-`--dir` there is no robots *request*, but a `robots.txt` in the directory is still read as a
-surface and for its `Sitemap:` lines.
+the path is recorded as skipped, and a sitemap URL that was skipped counts as never reached.
+**This holds in `--dir` mode too**, which reads the build's own `robots.txt` and honours it. There
+is no request to disallow when the pages come from disk, but robots.txt is a statement about the
+site's content rather than about the transport, and the consequence is that the two sources agree
+on the same bytes — which is what makes the offline gate a gate (D1). A site whose `robots.txt`
+disallows paths that a deploy check needs to see should be checked with the policy in mind.
 
 Rejected: **ignoring `Disallow`**. The principal's instruction is to publish a tool others run;
 a tool that ignores robots.txt is a tool that gets blocked, correctly.
 Rejected: **honouring `Crawl-delay`**. It is not in the robots.txt standard, and the explicit
 `--delay` is easier to reason about.
 
-### D9. The plan file is read leniently, and only two things are enforced
+### D9. The plan file is read leniently about its version, and strictly about its types
 
 `--plan site.json` reads the `siteplan` format ([`siteplan/CONTEXT.md`](../../siteplan/CONTEXT.md)
-is authoritative). `required_surfaces` is checked against what was observed, and
-`identity.schema_types` is checked against the home page's JSON-LD `@type` values. Unknown keys
-are ignored with a note; a key that is present but the wrong type is a finding rather than a
-crash; a malformed or missing plan file is an error with a non-zero exit, because a gate that
-cannot read its own plan must not pass.
+is authoritative; this module is the consumer and links there rather than restating the format).
+Two things are **enforced**, because they are the two a built site can be checked against and this
+tool can observe both:
 
-Rejected: **enforcing everything the format can express** (`url_rules`, `crawler_stance`,
-`offering`, per-page `pages`). Two of them (`url_rules.max_depth`, `pages[].path`) are implied by
-the crawl itself, `crawler_stance` is not observable from the pages, and `identity.fields` names
-schema properties this tool does not extract. Claiming to check them would be the
-implied-claim failure `CONTEXT.md` warns about. They are listed in the output as not checked.
-Rejected: **failing on unknown keys**. The format is owned by another project and will grow; a
-consumer that fails on growth forces lockstep releases.
+* `required_surfaces` — the machine-readable files the site must publish;
+* `identity.schema_types` — the Schema.org entity types the home page must carry in JSON-LD.
+
+Everything else is read, reported as **not checked** with the reason, and otherwise ignored:
+`offering` and `identity.fields` name Schema.org properties this consumer does not extract;
+`url_rules` and `pages` are about URL shape and per-page purpose, which the crawl reports but does
+not judge; `crawler_stance` is not observable from pages at all.
+
+**Leniency is about the format's growth, not about its correctness.** Decided by the principal on
+2026-09-21 (RECORD.md, Q3):
+
+| Input | Behaviour | Why |
+| --- | --- | --- |
+| `plan_version` older, newer or absent | Read, not rejected. The output notes which revision the consumer was built against and says a met result does not mean the whole plan was verified | A consumer that rejects an unfamiliar version breaks the producer every time the format grows. `siteplan` has not confirmed the key is required, so its absence cannot be fatal either |
+| A key this consumer does not know | Ignored, with a note naming it | Same reason, and it is the case that will actually happen |
+| A known key of the **wrong type** | A problem, reported and gating | Leniency about growth is not leniency about malformation. A consumer that coerces `"schema_types": "Organization"` into a one-item list reports a plan as met when the plan was never well formed |
+| `required_surfaces` as a bare string | Accepted | The meaning is unambiguous, and rejecting it costs a producer a release for nothing. This is the one coercion, and it is opt-in per key |
+| A file that cannot be read, or is not JSON, or is not an object | Exit 2 | A gate that cannot read its own plan must not report a pass |
+
+The strict-type rule was found by testing rather than by reasoning: the first implementation
+coerced a bare string for every list-valued key, so a malformed `identity.schema_types` passed.
+
+Rejected: **enforcing everything the format can express.** Three of the keys are not observable
+from the pages this tool reads, so enforcing them would mean reporting checks that were not
+performed, inside the one product whose constraint is that it claims nothing beyond observation.
+Rejected: **failing on unknown keys.** It forces lockstep releases between two deliberately
+independent projects. Rejected: **coercing every list-valued key**, which is how a malformed plan
+becomes a met plan.
 
 ### D10. Findings have severities, and only errors gate
 

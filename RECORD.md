@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 5
+revision: 6
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-21T14:45:00-06:00"
+updated_at: "2026-09-21T15:20:00-06:00"
 record_status: open
 work_status: active
 ---
@@ -37,26 +37,32 @@ does not know; Q5: a missing `llms.txt` must not gate). The product frame, the c
 the tool specification remain `inherited` from the principal (2026-09-21,
 [`CONTEXT.md`](CONTEXT.md)) and are not reopened.
 
-Work scope: **U1**, the offline gate — reconciled, verified, and where necessary cut back against
-the registered facts contract. The units after it are granted but not picked up; each registers
-its own pickup plan before it starts.
+Work scope: **U1, U2, U3 and U5 delivered; U4 blocked on Q2.** U1 reconciled and cut back the
+pre-plan package against the registered facts contract, U2 hardened the address guard, U3 built
+the plan check, U5 wrote the reader-facing documents. Each registered its pickup plan before it
+started. U4 cannot start until the principal names a project and its `build/`.
 
-Work: revision 3 registers the selection, the grant and U1's pickup plan. The `Run` increment that
-produced the package in the tree is accounted for in Act (*Work already in the tree*) and is not
-ratified by being described: U1's reconciliation decides what survives, and this record carries
-the outcome when U1 returns.
+Work: four units delivered, each with its evidence in the Review table. `make ci` exits 0 on the
+committed revision; 277 tests pass with the network unavailable. Three defects were found by
+testing rather than by reading, and each is recorded where it was found: the script-shell
+thresholds were silently tunable; the new check script could not fail; and the guard refused the
+http-to-https upgrade redirect. A fourth, the plan consumer coercing a malformed value into a
+valid one, was found while writing U3's leniency cases.
 
-Outcome: unknown. U1 has not run. Nothing has been observed against a real built site or a real
-live site.
+Outcome: the tool is built and green on its own fixtures. **Nothing has been observed against a
+real built site or a real live site**, which is what U4 is for, and that is the honest boundary on
+every claim below.
 
-Next: Moss — carry out U1's registered pickup plan, then register U2's pickup plan before
-implementing U2.
+Next: David — answer Q2, naming a project whose built directory U4 may run against; that is the
+only thing standing between this record and the evidence that the gate works on a real site.
+Second: name an assessor for A1–A7, or accept the self-check with the limit stated in Review.
 
-Dependency: Nothing blocks U1. **U4 is blocked on open question Q2**: the principal has not named
+Dependency: Nothing blocks U1, U2, U3 or U5 — all delivered. **U4 is blocked on open question Q2**: the principal has not named
 which project's `build/` may be tested against, and no `build/` directory exists in this
 workspace. U4 must not run until he answers.
 
-Waiting on: David (principal), for Q2 only. U1, U2, U3 and U5 proceed without it.
+Waiting on: David (principal), for Q2 and for the assessment. No unit can proceed without one
+of those answers.
 
 Review due: 2026-10-05 — see Review. A1–A5, A8 and A9 become assessable when U1 returns; A6 and
 A7 at U2 and U3; B1–B3 need a real site and remain unobserved.
@@ -274,15 +280,15 @@ plan, and this revision does not ratify it by describing it.
 
 | What | Measure (2026-09-21) | State |
 | --- | --- | --- |
-| `sitewalk/` — 15 modules | 2,592 lines: pages 348, findings 328, report 244, crawl 242, sources 217, plan 210, fetch 191, guard 187, cli 182, facts 159, sitemap 114, urls 82, `__init__` 48, errors 30, `__main__` 10 | Present, uncommitted, unratified |
-| `tests/` — 9 modules plus `fakes.py` | 2,378 lines, including a no-network harness that replaces `socket.socket` and `socket.getaddrinfo` with functions that raise | Present, uncommitted, unratified |
+| `sitewalk/` — 15 modules | 2,592 lines as measured before U1; **2,658 after U1–U3**, which removed six dead items and added the same-site redirect rule, the plan-version policy and the report's heuristic evidence | Reconciled and delivered in U1–U3 |
+| `tests/` — 10 test modules plus `fakes.py` | 2,378 lines as measured before U1; **2,894 after**, including the no-network harness and the adversarial guard suite | Delivered |
 | `tests/fixtures/` — 2 sites, 13 files | A 12-page site carrying every finding the specification names, plus a bare site for the missing-surface cases | Present, uncommitted, unratified |
 | `make records` | Clean, including `skill_version: 0.5.0` and the corrected checker path | True |
 | `make ci` | **Exits 0, and establishes nothing**: `scripts/check-project.sh` still contains the template's stub, so no project check runs at all — the two failing tests below do not fail the build | True, and the more dangerous of the two states; U1 fixes it |
-| `python3 -m unittest discover -s tests -t .` | **238 of 240 pass**; the two failures are diagnosed below | True |
+| `python3 -m unittest discover -s tests -t .` | 238 of 240 passed before U1; **277 pass after** | Resolved |
 
-**The two failures, diagnosed and deliberately not repaired** — repairing them would be
-implementation. `tests/test_cli.py::LiveModeOverTheFakeConnection` patches
+**The two failures, diagnosed during planning and repaired in U2** — at the time, repairing them
+would have been implementation. `tests/test_cli.py::LiveModeOverTheFakeConnection` patches
 `sitewalk.guard.default_resolver` and `sitewalk.fetch.default_connector` at test time, but
 `LiveSource` binds both as dataclass defaults when the class is defined, so the patch never
 reaches the source and the test attempts a real DNS lookup. The no-network harness turns that
@@ -362,6 +368,58 @@ owns the guard itself.
 **Files U2 expects to touch:** `sitewalk/guard.py`, `sitewalk/fetch.py`, `tests/test_guard.py`,
 `tests/fakes.py`, and this record. Anything else is recorded as a deviation before it is done.
 
+### U3 pickup plan
+
+Registered before U3 begins. U3 is `--plan`: the consumer side of the format `siteplan` owns.
+
+**How U3 will be carried out:**
+
+1. **Re-read the format from `siteplan`'s own document** rather than from this record, and check
+   the two enforced keys against it: `required_surfaces` and `identity.schema_types`.
+2. **Apply the principal's Q3 answer as a rule, and test it:** any `plan_version` is accepted;
+   a version this consumer does not know produces a note saying which revision it was built
+   against and that it enforced only the keys it understands; an absent `plan_version` is a note
+   and not a failure, because `siteplan` has not yet confirmed it is required.
+3. **Prove the leniency is real**, not just intended: add a case with an unknown key, a case with
+   a future `plan_version`, and a case with keys of the wrong type, and assert what each does.
+4. **Prove the enforcement is real:** a conforming fixture meets the plan; the bare fixture fails
+   it; a plan file that cannot be read exits 2, never 0.
+5. **Keep the "not checked" list honest** — `offering`, `url_rules`, `crawler_stance`, `pages` and
+   `identity.fields` must be named in the output as not checked, with the reason, so a reader is
+   never left to assume they were verified.
+6. Register U5's pickup plan before starting U5.
+
+**Acceptance criteria for U3:** A6, plus A8 and A9 staying green.
+
+**Files U3 expects to touch:** `sitewalk/plan.py`, `tests/test_plan.py`, `tests/test_cli.py`,
+`docs/DESIGN.md` (D9), and this record.
+
+### U5 pickup plan
+
+Registered before U5 begins. U5 is the reader-facing documentation: `README.md` and the design
+record.
+
+**How U5 will be carried out:**
+
+1. **Write the README for a stranger with no context.** Install, both modes, the plan check, the
+   options and exit codes, and — as its own section, before the usage — what the tool does not
+   do. That section is the claim boundary restated for a person who will not read `CONTEXT.md`.
+2. **Check every command in it by running it.** A README whose commands do not run is a README
+   that teaches a stranger to distrust the tool.
+3. **Check every default in it against `cli.py`**, rather than against memory. The options table
+   is a claim about behaviour, and it is the kind that goes stale silently.
+4. **Bring `docs/DESIGN.md` up to date with what was built**, naming each place it had drifted:
+   the removed link-check bound, robots being honoured in `--dir`, and the plan-version policy.
+5. **Say in the README where the reasoning lives**, so a reader who wants the why is not left with
+   only the how.
+
+**Acceptance criteria for U5:** a reader with no context can install and run both modes from the
+README alone; the "what it does not do" section states the no-JavaScript limit, the origin bound,
+the absence of any ranking, citation or recommendation claim, and that `--dir` makes no network
+request.
+
+**Files U5 expects to touch:** `README.md`, `docs/DESIGN.md`, and this record.
+
 ## Out of scope
 
 | Not in this plan | Reason |
@@ -420,11 +478,17 @@ registered and pending.
 | --- | --- | --- | --- | --- |
 | A1–A5, A8, A9 (the offline gate) | The committed revision, the two independent derivations, `make ci` | Moss, at U1 delivery, 2026-09-21 | **Met, with the limits below.** Nine of nine per-page facts and twelve of twelve site-wide findings agree with computations made without importing the tool's parser; `--dir` runs inside a harness where any socket use raises; `make ci` exits 0 and exits 2 on each of three injected defects; 244 tests pass offline | Accepted by Moss as self-check only — see the next row. U1's sub-record carries the detail |
 | A7 (the guard) | `tests/test_guard.py` and `tests/test_guard_adversarial.py`, injected fakes, no network | Moss, at U2 delivery, 2026-09-21 | **Met, with one defect found and fixed.** Every rule refuses what it must and names the address it refused, through `fetch.fetch` rather than through `guard` alone. The adversarial pass found that an `http`→`https` upgrade redirect — the commonest redirect on the web — was refused as off-origin, which would have reported a plain-HTTP site as unreachable; the rule is now a same-site check that allows the upgrade and refuses downgrades, other hosts, subdomains and other ports | Accepted by Moss as self-check only. The upgrade defect is the evidence that the adversarial pass was worth running, and it is also the reason an independent assessor is still wanted |
-| A6 (the plan check) | CLI tests | Moss, at U3 delivery | Pending — U3 not started | Pending |
+| A6 (the plan check) | CLI tests and `tests/test_plan.py` | Moss, at U3 delivery, 2026-09-21 | **Met, with one defect found and fixed.** `required_surfaces` and the home page's `identity.schema_types` are enforced; the other keys are named in the output as not checked with the reason; an unreadable or malformed plan exits 2 and never 0. The defect: the first implementation coerced a bare string into a one-item list for *every* list-valued key, so a plan declaring `"schema_types": "Organization"` was reported as met instead of malformed | Accepted by Moss as self-check only. Leniency now applies to the format's growth (unknown keys, any `plan_version`) and not to its correctness (a known key of the wrong type is a problem) |
 | Independent assessment of U1–U3 by an assessor who did not write them | A named assessor's return against A1–A9 | David to grant; not before delivery | **Not established for U1 or U2.** Moss wrote the package and the reconciliation, so A1–A5, A8 and A9 are a self-check. The two defects U1 found were both found by running code against injected breakage rather than by review, which is evidence that the checks work, not that the design is right | Requested in the return to the principal: name an assessor, or accept the self-check with its stated limit |
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 6, 2026-09-21T15:20:00-06:00. **U3 and U5 delivered and assessed against A6.** Source:
+U3's and U5's committed evidence. Reason: each planned result is marked delivered before a stop.
+What changed: A6's finding; U3's plan-version policy (any version read, unknown keys ignored, a
+known key of the wrong type rejected) and U5's documents. What is preserved: A6's text as
+registered. Affects: U3 and U5 delivered. U4 remains blocked on Q2, and is the only unit left.
 
 Revision 5, 2026-09-21T14:45:00-06:00. **U2 delivered and assessed against A7.** Source: U2's
 committed evidence and the adversarial suite. Reason: the skill requires each planned result to be

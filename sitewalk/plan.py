@@ -79,9 +79,18 @@ def load_plan(path: str | Path) -> dict[str, Any]:
     return data
 
 
-def _as_list(value: Any) -> list[str] | None:
-    """Return a list of non-empty strings, or None when the value is not one."""
+def _as_list(value: Any, allow_single_string: bool = False) -> list[str] | None:
+    """Return a list of non-empty strings, or None when the value is not one.
+
+    ``allow_single_string`` is off by default and turned on only where a bare string is
+    unambiguous. Leniency about this belongs in the producer, which knows what it meant when it
+    wrote the file; a consumer that quietly coerces a malformed value into a plausible one
+    reports a plan as met when the plan was never well formed. That is the same class of error as
+    reporting a check that was never performed.
+    """
     if isinstance(value, str):
+        if not allow_single_string:
+            return None
         return [value] if value else []
     if isinstance(value, list):
         out: list[str] = []
@@ -105,16 +114,28 @@ def check_plan(report: SiteReport, plan: dict[str, Any], path: str = "") -> Plan
     check.kind = kind if isinstance(kind, str) else None
 
     if check.version is None:
-        check.notes.append("the plan names no plan_version")
-    elif check.version != SUPPORTED_PLAN_VERSION:
+        # Not a failure. siteplan has not confirmed the key is required, and a consumer that
+        # rejects a plan for missing a version rejects plans it could have checked.
         check.notes.append(
-            f"the plan declares plan_version {check.version!r}; this consumer was written "
-            f"against version {SUPPORTED_PLAN_VERSION} and checked only the keys it knows"
+            "the plan names no plan_version; it was read anyway and the keys this consumer "
+            "knows were checked"
+        )
+    elif check.version != SUPPORTED_PLAN_VERSION:
+        # Any version is accepted, by the principal's decision of 2026-09-21 (RECORD.md, Q3): a
+        # consumer that rejects an unfamiliar version or key breaks the producer every time the
+        # format grows. What it must do instead is say what it did and did not enforce.
+        check.notes.append(
+            f"the plan declares plan_version {check.version!r} and this consumer was written "
+            f"against version {SUPPORTED_PLAN_VERSION}. The plan was read, not rejected: the "
+            "keys this consumer knows were checked and anything it does not recognise was "
+            "ignored, so a met result here does not mean the whole plan was verified"
         )
 
     required = plan.get("required_surfaces")
     if required is not None:
-        names = _as_list(required)
+        # A single surface name as a bare string is accepted here: the meaning is unambiguous,
+        # and "is a list" is the kind of strictness that costs a producer a release for nothing.
+        names = _as_list(required, allow_single_string=True)
         if names is None:
             check.problems.append("required_surfaces is not a list of strings")
         else:

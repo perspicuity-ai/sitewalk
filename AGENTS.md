@@ -154,6 +154,11 @@ the parts that are not blocked.
 
 ## Definition of done
 
+- **Every new test and fixture answers one question: *which wrong implementation would this
+  catch?*** If the answer is none, the fixture is decoration and the test is counted as evidence
+  while being none. A test that asserts only that a function returns what it returns is not a
+  check; a fixture that cannot separate a right implementation from a plausible wrong one is not a
+  fixture. This rule was earned, not assumed — see *Why this rule exists* below.
 - `make ci` exits 0. It runs the record check and `scripts/check-project.sh`, which byte-compiles
   the package, runs the suite with the network unavailable, exercises `python3 -m sitewalk`
   through the real entry point, and checks that the report still states its claim boundary.
@@ -167,3 +172,27 @@ the parts that are not blocked.
 - Every actor in the change is named. No job title, no retired label, no model name.
 - The record's `## Review` says what was **not** established. An honest "unobserved" beats an
   implied claim.
+
+## Why this rule exists
+
+Added 2026-09-21. The same class — **a check that cannot fail** — was found five times in this
+project's first session, twice in code, once in a fixture, once in a process document, and once in
+a record. Each looked correct when it was written, and each was found by asking the question above
+of work that seemed finished.
+
+| Instance | How it could not fail |
+| --- | --- |
+| The script-shell thresholds | The boundary test imported the constant it was testing, so moving the threshold from 200 to 5000 kept all 243 tests green |
+| `scripts/check-project.sh` | Its test step piped the suite into `tail`, so `set -e` saw `tail`'s exit status and `make ci` printed "ci passed" with two failing tests — the exact bug the stub had been replaced to prevent |
+| The raw-versus-processed quote (U6, caught before writing the test) | The fixture's `Disallow:` line had no comment and no padding, so quoting the parser's processed variable instead of the source line would have passed |
+| The conformance fixture (U7, caught before writing the test) | Asserting all 45 `siteplan` conformance cases as accept-cases would have failed 38 times while being wrong: those cases test the *producer's* faults, and a consumer is permitted to tolerate them |
+| A record correction (U7) | Fixing one contradiction between a criterion and a severity table introduced three more — a stale rule sentence, a wrong criterion count, and a missing acceptance-criteria line. A correction is where the author is most confident and least likely to look |
+
+**Two practices that follow from it.**
+
+1. **Prefer asserting on what a machine reads, not on a message string.** A test that asserts a
+   phrase appears will keep passing when the phrase's meaning changes; a test that asserts a state,
+   a count or a severity will not.
+2. **When you correct something, check for the pattern rather than trusting the edit.** The fifth
+   instance above was found by grepping for the superseded wording after the fix, not by reading
+   the fix and agreeing with it.

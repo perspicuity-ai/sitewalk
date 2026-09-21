@@ -1,13 +1,13 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 14
+revision: 15
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-21T20:05:00-06:00"
+updated_at: "2026-09-21T21:00:00-06:00"
 record_status: open
-work_status: submitted
+work_status: active
 ---
 
 # Sitewalk
@@ -350,6 +350,7 @@ David's; authority to treat the existing code as ratified, which this plan's U1 
 | **U6** (granted, not started) | **Make the robots.txt skip structural in the report.** The report must state, where a reader cannot miss it, how many paths were excluded and why | `sitewalk/crawl.py` must keep the matched rule; `sitewalk/report.py` must surface the count; `tests/` must prove each | Moss, after Finch's assessment returns and under a fresh pickup plan | Four criteria, all currently **unmet**: (1) the total count appears in the report header, not only in Notes; (2) the count appears in `limits` in the JSON as `paths_skipped_robots`; (3) each skip names the path **and quotes the matched rule** (`Disallow: /private/`), which today is discarded by `sitemap.parse_robots`; (4) a test asserts all three, so removing any of them fails the suite | 0.5 focus session. Uncertainty **low**: the skip list already exists; this is surfacing it and keeping the rule |
 | **U7** (granted, pickup plan registered) | **Make the plan verdict honest about what it knows: a version gate, and unverified surfaces that are never reported as absent.** Under the format's rule 4, keys grow but versions announce: an unknown key is additive growth a consumer may carry and name, while an unknown version means a key's meaning may have moved, so the verdict must be conditional in default mode and an error finding under `--strict` | `siteplan/docs/PLAN-FORMAT.md` at `fe8433b` (frozen format 1), read-only; the two version cases already in `siteplan/docs/fixtures/plan-conformance.json` | Moss, after U6 | Five criteria: (1) `plan_version` 1 reads clean, unqualified; (2) an older version reads normally, unqualified; (3) an unknown or newer version is met-with-a-condition in default mode and an **error finding exiting non-zero** under `--strict`; (4) an absent or mistyped `plan_version` is an error finding under `--strict` too — an unsupported verdict rather than a conditional one — with a message distinct from the unknown-version case; (5) a required surface the consumer has **no check for** is reported as *unverified*, never as absent, as a `conditional` finding: default runs disclose it and exit 0, and `--strict` refuses to certify the plan and exits non-zero. The severity is defined in the report's own documentation and reaches `finding_counts` in the JSON. Tests load the seven **valid** plans from the conformance fixture and assert each is met, and assert that an unchecked surface produces no `plan_surface_missing` finding | 1 focus session. Uncertainty **low** |
 | **U8** (granted by ruling, not started) | **Check the two surfaces this consumer could not check: `json-ld` and `rss.xml`.** The format's vocabulary is closed at five and describes what a plan may require, not what one tool looks for, so the gap closes on this side | `siteplan/docs/PLAN-FORMAT.md` at `fe8433b`, read-only. Cost measured 2026-09-21 | Moss, after U7 | Four criteria: (1) a plan requiring `rss.xml` is met when `/rss.xml` answers 2xx and unmet when it does not; (2) a plan requiring `json-ld` is met when any crawled page carries a JSON-LD `@type`; (3) **four states are distinguishable in the JSON, without reading a message string**: fetched-and-present, fetched-and-absent, derived-and-not-fetched, and not-checked-at-all; and (4) **the disclosure stays**: a surface this consumer still cannot check is named, is state *not checked*, stays `conditional`, and still gates under `--strict`, so a sixth surface added later reopens the same gap under the same rule. The vocabulary stays at five | 0.5–1 focus session. Uncertainty **low**, and the ruling is conditional on the cost turning out as measured: the two are one request and one already-held fact. Raised from 0.5 by the four-state requirement |
+| **U9** (registered, not granted) | **Apply U1's deletion test across the whole package, and fix what it finds.** Finch found two items that fail the very test U1 used to delete six others, so the test was right and was not applied exhaustively | `sitewalk/guard.py`, `sitewalk/errors.py`, `sitewalk/plan.py`, `docs/DESIGN.md`. Independent of U6–U8 except for the plan JSON, which is U8's surface | Moss, after U8 (the `plan` JSON item touches U8's file) | Six criteria: (1) `Address.host`, `Address.port` and `Address.family` are written but read nowhere — **verified by hand, not by a name-level scan** — and are removed; (2) `PlanError` has no reference anywhere and is removed or given a documented use; (3) the deletion test is re-run exhaustively and its **result is recorded, including a nil result**; (4) `plan.identity_schema_types_met: true` while `passed: false` on a malformed plan is fixed, since that is the same overclaim shape as U8's states; (5) DESIGN D6's `app_root_markers` and D1's `read(path)` are corrected to `app_root_element` and `fetch`; (6) each fix answers P1's question with a test that fails on the wrong change | 0.5–1 focus session. Uncertainty **low** |
 
 **Order and dependency.** U1 → U2 → U3, with U5 alongside U1 and U4 startable as soon as David
 names a project. U4 and U3 can run in either order once U2 is done; the requested order puts the
@@ -701,6 +702,33 @@ is still named in the output, still `conditional`, and still gates under `--stri
 two checks makes the gate able to certify more, it does not make the disclosure optional. If the
 format adds a sixth surface, the same gap reopens and the same rule applies.
 
+### U9 scoping: the test U1 used, applied to everything
+
+Finch's assessment returned two defects that **fail U1's own deletion test** — the test that removed
+`Page.final_url` for being written and never read, and `_SITEMAP_NS` for having no caller. Finch's
+words: *"an audit that finds exactly the things it was pointed at is not yet an audit."*
+
+| Item | Evidence | Fix |
+| --- | --- | --- |
+| `Address.host`, `Address.port`, `Address.family` | Written at `guard.py:57` and `guard.py:135` and in `tests/fakes.py:40`; **no attribute read anywhere**. Checked by hand after a name-level scan gave a false negative, because `parts.port` and `target.port` in `urls.py` put `port` in the package's read set | `Address` keeps `sockaddr`, which is the only value the guard reads (`address.sockaddr[0]`), and drops the rest. `host` and `port` are the caller's own arguments echoed back, and `family` is needed only when constructing a literal address, not when holding one |
+| `PlanError` | Defined in `errors.py`, zero references in the package or the tests, not exported | Removed. `FetchError` is kept and is *documented* as raised only on an unreachable path, because removing a real error type is a different decision from removing an unused name |
+| `plan.identity_schema_types_met: true` with `passed: false` | Reproduced: a malformed plan sets both | The malformed case must not report a met sub-check. Same overclaim shape as U8's four states, which is why the fix lands after U8 |
+| DESIGN drift | D6 names `app_root_markers` (the key is `app_root_element`); D1 describes the protocol as `read(path)` (it declares `fetch`) | Corrected. Documentation describing code that does not exist is the same defect class as a test that cannot fail |
+
+**The re-run is the unit's real deliverable.** A name-level scan over the package and tests was
+already run and gave false negatives — it put any attribute of a given name anywhere into the read
+set — so U9 must run the test at the attribute and constructor-keyword level, and **record the result
+even if it is nil**, because a nil result from an exhaustive test is a finding and an unrecorded scan
+is not.
+
+**P1 applies to this unit's own fixes**: each removed name needs the test that would fail if it came
+back, and each corrected document claim needs the assertion or check that catches it drifting again.
+
+**Acceptance criteria for U9:** the six in the unit table, plus A8 and A9 staying green.
+
+**Files U9 expects to touch:** `sitewalk/guard.py`, `sitewalk/errors.py`, `sitewalk/plan.py`,
+`sitewalk/facts.py`, `tests/test_guard.py`, `tests/fakes.py`, `docs/DESIGN.md`, and this record.
+
 ### U6 pickup plan
 
 Registered before U6 begins. The principal granted U6 on 2026-09-21 and confirmed the shape below;
@@ -876,6 +904,16 @@ registered and pending.
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 15, 2026-09-21T21:00:00-06:00. **The freeze is released, P1 is applied, and Finch's
+findings register U9.** Source: Finch's assessment as relayed by the principal on 2026-09-21, and
+P1's grant. Reason: the assessor returned, so the held work could land — the record corrections, P1,
+and a unit for the defects that fail U1's own deletion test. What changed: P1 is applied to
+`AGENTS.md`'s definition of done with the five instances that earned it; U9 is registered with six
+criteria and its scoping; the corrections themselves are recorded in U1's sub-record at revision 2,
+which quotes the false A4 sentence rather than deleting it. What is preserved: the four assessed
+criteria and every earlier revision. Affects: U9 after U8, and the delivery state, which returns to
+`active` now that work resumes. **No code was written in this revision.**
 
 Revision 14, 2026-09-21T20:05:00-06:00. **U8 gains the four-state requirement, and a live defect
 it exposed is recorded.** Source: the principal's requirement of 2026-09-21 that a machine reader

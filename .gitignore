@@ -1,0 +1,25 @@
+# Runtime data
+var/
+*.db
+*.db-wal
+*.db-shm
+
+# Build output
+build/
+dist/
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# OS and editors
+.DS_Store
+*.swp

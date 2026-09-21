@@ -197,6 +197,15 @@ def check_plan(report: SiteReport, plan: dict[str, Any], path: str = "") -> Plan
                 if surface is None or surface.state == NOT_CHECKED:
                     # Not looked at. Unverified, never absent: absent means a fetch was attempted
                     # and failed, and this is the case where nothing was attempted at all.
+                    #
+                    # `NOT_CHECKED` reaches this branch when a surface is in the format's
+                    # vocabulary but not in `CHECKED_SURFACES` — which is no surface today, so the
+                    # state is currently unreachable from normal runs. It is kept deliberately: it
+                    # is what makes a future unchecked surface *unverified* rather than *absent*.
+                    # A dead-code audit that removes it restores the exact overclaim this module
+                    # was fixed to stop making. See the constant in `facts.py` for what would make
+                    # it reachable, and `tests/test_plan.py::ANotCheckedSurfaceIsStillHandled`,
+                    # which fails if this handling goes.
                     check.unverified_surfaces.append(name)
                 elif not surface.exists:
                     check.unmet_surfaces.append(name)

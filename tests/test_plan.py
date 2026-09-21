@@ -524,3 +524,53 @@ class ASubCheckReportsWhetherItRan(unittest.TestCase):
                     continue
                 self.assertIsNot(block["required_surfaces_met"], True, plan)
                 self.assertIsNot(block["identity_schema_types_met"], True, plan)
+
+
+class ANotCheckedSurfaceIsStillHandled(unittest.TestCase):
+    """The guard on `not_checked`, which is declared and currently unreachable.
+
+    No live path assigns that state, because every surface in the format's vocabulary is checked.
+    A dead-code audit — the one U9 ran — will find it unreached and may reasonably want to remove
+    it. Removing it restores the overclaim U7 and U8 were built to stop making: a surface nothing
+    looked for, reported as one the site does not publish.
+
+    So its handling is asserted rather than trusted. This test fails if the state, or the branch
+    that reads it, is deleted.
+    """
+
+    def test_the_state_is_declared(self):
+        from sitewalk.facts import NOT_CHECKED
+
+        self.assertEqual(NOT_CHECKED, "not_checked")
+
+    def test_a_surface_in_that_state_is_handled_as_unverified(self):
+        from sitewalk.facts import NOT_CHECKED, Surface
+
+        report = report_for()
+        # Injected directly rather than by making a surface unchecked, so the assertion is on the
+        # branch in the plan check and not on how the state was produced.
+        report.surfaces["rss.xml"] = Surface(name="rss.xml", state=NOT_CHECKED)
+        check = check_plan(report, {"plan_version": 1, "required_surfaces": ["rss.xml"]})
+        self.assertEqual(check.unverified_surfaces, ["rss.xml"])
+        self.assertEqual(check.unmet_surfaces, [], "an unchecked surface was reported as absent")
+        self.assertEqual(check.verdict, "met with conditions")
+
+    def test_the_state_reaches_a_gating_conditional_finding(self):
+        from sitewalk.facts import NOT_CHECKED, Surface
+
+        report = report_for()
+        report.surfaces["rss.xml"] = Surface(name="rss.xml", state=NOT_CHECKED)
+        apply_to_report(
+            check_plan(report, {"plan_version": 1, "required_surfaces": ["rss.xml"]}), report
+        )
+        kinds = {f.kind: f.severity for f in report.conditionals}
+        self.assertEqual(kinds.get("plan_surface_unverified"), "conditional")
+        self.assertEqual(exit_code(report, strict=True), 1)
+
+    def test_the_state_is_unreachable_today_and_that_is_the_point(self):
+        # Documents the unreachability rather than hiding it: every vocabulary surface is checked,
+        # so the state is a safety net and not a live path. If this assertion ever fails, the
+        # state has become reachable — which is also fine, and the two tests above cover it.
+        from sitewalk.plan import CHECKED_SURFACES, KNOWN_SURFACES
+
+        self.assertEqual(set(KNOWN_SURFACES), set(CHECKED_SURFACES))

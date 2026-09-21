@@ -100,7 +100,26 @@ class PageFact:
 #: * ``derived``     — not fetched and nothing to fetch; established from pages already read, as
 #:                     ``json-ld`` is. Reporting this with an empty URL and status would read as
 #:                     "we fetched it and learned nothing", which is a different and worse claim.
-#: * ``not_checked`` — this consumer has no check for it. A gap here, never a finding about the site.
+#: * ``not_checked`` — this consumer has no check for it. A gap here, never a finding about the
+#:   site.
+#:
+#: **``not_checked`` is load-bearing and currently unreachable. Do not delete it.** No live path
+#: assigns it today, because every surface in the format's vocabulary is checked. It exists for the
+#: case where one is not, so that such a surface is reported *unverified* rather than *absent* —
+#: the overclaim U7 and U8 were built to remove ("the plan requires rss.xml, which the site does not
+#: publish", about a file nothing ever looked for).
+#:
+#: What would make it reachable again: a sixth value added to the format's ``required_surfaces``
+#: (see ``KNOWN_SURFACES`` in ``plan.py``), or a surface dropping out of ``CHECKED_SURFACES``.
+#: Which fires first: the tripwire test ``tests/test_plan.py::
+#: EveryVocabularySurfaceHasACheck.test_every_vocabulary_surface_is_checked_now`` fails the moment
+#: the two sets differ, so a developer meets the gap at build time and is told what to do. This
+#: state is what keeps the report honest if the gap ships anyway.
+#:
+#: A reader running a dead-code audit will find no live assignment here and may reasonably want to
+#: remove it. That is the wrong call, and
+#: ``tests/test_plan.py::ANotCheckedSurfaceIsStillHandled`` fails if the state or its handling
+#: goes.
 PRESENT = "present"
 ABSENT = "absent"
 DERIVED = "derived"

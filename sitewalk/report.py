@@ -124,7 +124,19 @@ def to_dict(report: SiteReport) -> dict[str, Any]:
         ],
         "finding_counts": {
             "error": len(report.errors),
+            "conditional": len(report.conditionals),
             "info": len(report.infos),
+            # The severities --strict refuses. A machine reader can read the verdict from here
+            # without walking the findings list or inferring anything from an exit code.
+            "gating": len(report.gating),
+        },
+        "severities": {
+            "error": "something is wrong with the site as built; gates under --strict",
+            "conditional": (
+                "the verdict depends on something this consumer does not know; disclosed in "
+                "every run, gates under --strict"
+            ),
+            "info": "an observation or the site's own choice; never gates",
         },
         "plan": report.plan,
         "notes": report.notes,
@@ -221,11 +233,21 @@ def to_text(report: SiteReport) -> str:
     lines.append(f"  sitemap URLs never reached:             {len(report.sitemap_unreached)}")
 
     errors = report.errors
+    conditionals = report.conditionals
     infos = report.infos
-    lines.append(_rule(f"Findings ({len(errors)} error, {len(infos)} note)"))
-    if not errors and not infos:
+    lines.append(
+        _rule(
+            f"Findings ({len(errors)} error, {len(conditionals)} conditional, {len(infos)} note)"
+        )
+    )
+    lines.append(
+        "  error = wrong with the site as built; conditional = the verdict depends on something"
+        " this tool does not know; note = an observation. error and conditional gate under"
+        " --strict."
+    )
+    if not report.findings:
         lines.append("  none")
-    for label, group in (("ERROR", errors), ("NOTE", infos)):
+    for label, group in (("ERROR", errors), ("CONDITIONAL", conditionals), ("NOTE", infos)):
         for finding in group:
             lines.append(f"  [{label}] {finding.kind}: {finding.message}")
 
@@ -241,27 +263,36 @@ def to_text(report: SiteReport) -> str:
             lines.append(f"  - {note}")
 
     lines.append(_rule("Exit"))
-    if report.errors:
+    if report.gating:
         lines.append(
-            f"  {len(report.errors)} error-severity finding(s). Under --strict the exit status is 1."
+            f"  {len(report.gating)} gating finding(s): {len(errors)} error, "
+            f"{len(conditionals)} conditional. Under --strict the exit status is 1."
         )
     else:
-        lines.append("  no error-severity findings.")
+        lines.append("  no gating findings.")
     return "\n".join(lines)
 
 
 def summary_line(report: SiteReport) -> str:
     """One line for a CI log: what was read, what was found, and what gated."""
-    return (
-        f"sitewalk: {len(report.pages)} page(s), "
-        f"{len(report.errors)} error(s), {len(report.infos)} note(s) — "
-        + ("FAIL" if report.errors else "ok")
-    )
+    parts = [
+        f"{len(report.pages)} page(s)",
+        f"{len(report.errors)} error(s)",
+        f"{len(report.conditionals)} conditional",
+        f"{len(report.infos)} note(s)",
+    ]
+    verdict = "FAIL" if report.gating else "ok"
+    return f"sitewalk: {', '.join(parts)} — {verdict}"
 
 
 def exit_code(report: SiteReport, strict: bool) -> int:
-    """0 normally; 1 under ``--strict`` when an error-severity finding exists."""
-    if strict and report.errors:
+    """0 normally; 1 under ``--strict`` when a gating finding exists.
+
+    The policy is the table in :data:`sitewalk.facts.GATING_SEVERITIES`: ``--strict`` maps
+    severities to an exit code and never creates a finding, so two runs of the same site against
+    the same plan cannot disagree about what is true.
+    """
+    if strict and report.gating:
         return 1
     return 0
 

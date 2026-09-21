@@ -225,15 +225,28 @@ Rejected: **failing on unknown keys.** It forces lockstep releases between two d
 independent projects. Rejected: **coercing every list-valued key**, which is how a malformed plan
 becomes a met plan.
 
-### D10. Findings have severities, and only errors gate
+### D10. Findings have severities, and the gate is a policy over them
 
-`--strict` exits 1 when an `error`-severity finding exists. Notes (`info`) — a script-rendered
-page, a missing `llms.txt`, a truncated body, a surface named in the plan that the site does not
-publish — are reported and do not gate. The split is recorded in the output itself so a CI log
-shows why it passed.
+**The report states what is true; the gate decides what is tolerable.** Three severities, defined
+in the output so a machine reader never infers one from an exit code:
+
+| Severity | Meaning | `--strict` |
+| --- | --- | --- |
+| `error` | Something is wrong with the site as built | exits 1 |
+| `conditional` | The verdict depends on something this consumer does not know: an unknown or newer plan version, an absent or mistyped one, or a required surface it has no check for | exits 1 |
+| `info` | An observation or a site's own choice, with nothing left unknown | no effect |
+
+`--strict` maps severities to an exit code and **never creates a finding**. That separation is the
+point: whether a plan's version is unknown is a fact about the file, and whether that fact should
+fail a build is a policy. If the flag created findings, two runs of the same site against the same
+plan could disagree about what is true, and comparability is the only thing that makes a report
+checkable. The mapping is a table (`facts.GATING_SEVERITIES`) rather than a condition buried in the
+exit path, so the policy is readable without reading the code.
 
 Rejected: **gating on notes**. A missing `llms.txt` is a design choice of the site, not a defect
 introduced by the change under test, and a gate that fails on choices gets disabled.
+Rejected: **letting `--strict` create the conditional finding.** It would make the report a
+function of the flag rather than of the site.
 
 ## What is deliberately absent
 

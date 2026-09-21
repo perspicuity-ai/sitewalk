@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .facts import SiteReport
+from .facts import CONDITIONAL, ERROR, Finding, SiteReport
 from .urls import relative_path
 
 #: Keys the format defines at the top level, and whether this consumer enforces them.
@@ -42,6 +42,15 @@ KNOWN_KEYS: dict[str, str] = {
 #: The plan version this consumer was written against.
 SUPPORTED_PLAN_VERSION = 1
 
+#: The surfaces this consumer can actually check.
+CHECKED_SURFACES = ("robots.txt", "sitemap.xml", "llms.txt")
+
+#: The format's closed vocabulary for ``required_surfaces``. A name in here that this consumer
+#: cannot check is a gap here, reported as unverified. A name *outside* it is not a surface of this
+#: format at all, so there is nothing to check and nothing to be unverified about: it is reported
+#: unmet, because the site is not publishing the thing the name denotes.
+KNOWN_SURFACES = ("json-ld", "llms.txt", "robots.txt", "rss.xml", "sitemap.xml")
+
 
 @dataclass
 class PlanCheck:
@@ -53,6 +62,8 @@ class PlanCheck:
     kind: str | None = None
     problems: list[str] = field(default_factory=list)
     unmet_surfaces: list[str] = field(default_factory=list)
+    unverified_surfaces: list[str] = field(default_factory=list)
+    conditions: list[str] = field(default_factory=list)
     missing_schema_types: list[str] = field(default_factory=list)
     home_json_ld_types: list[str] = field(default_factory=list)
     planned: bool = False
@@ -60,7 +71,24 @@ class PlanCheck:
 
     @property
     def passed(self) -> bool:
-        return self.planned and not self.problems and not self.unmet_surfaces and not self.missing_schema_types
+        """Met outright. A conditional verdict is not a pass, and not a failure either."""
+        return (
+            self.planned
+            and not self.problems
+            and not self.unmet_surfaces
+            and not self.unverified_surfaces
+            and not self.missing_schema_types
+            and not self.conditions
+        )
+
+    @property
+    def verdict(self) -> str:
+        """``met``, ``met with conditions``, or ``not met``."""
+        if self.problems or self.unmet_surfaces or self.missing_schema_types:
+            return "not met"
+        if self.conditions or self.unverified_surfaces:
+            return "met with conditions"
+        return "met"
 
 
 def load_plan(path: str | Path) -> dict[str, Any]:
@@ -113,22 +141,31 @@ def check_plan(report: SiteReport, plan: dict[str, Any], path: str = "") -> Plan
     kind = plan.get("kind")
     check.kind = kind if isinstance(kind, str) else None
 
-    if check.version is None:
-        # Not a failure. siteplan has not confirmed the key is required, and a consumer that
-        # rejects a plan for missing a version rejects plans it could have checked.
-        check.notes.append(
-            "the plan names no plan_version; it was read anyway and the keys this consumer "
-            "knows were checked"
+    # Rule 4 of the format: keys grow, versions announce. An unknown key is additive growth a
+    # consumer may carry and name; an unknown version means a key's meaning may have moved, so the
+    # verdict cannot be clean. Four cases, three verdicts, and the two failures share a gate while
+    # saying different things about the file.
+    version = check.version
+    if isinstance(version, bool) or not isinstance(version, int):
+        # Absent, or present and not an integer. A definite fault: the plan is invalid against
+        # every version, and with no readable version the semantics of no key are known.
+        check.problems.append(
+            f"plan_version is required and must be the integer {SUPPORTED_PLAN_VERSION}; "
+            f"this plan has {version!r}, so the file is malformed and none of its keys can be "
+            "trusted"
         )
-    elif check.version != SUPPORTED_PLAN_VERSION:
-        # Any version is accepted, by the principal's decision of 2026-09-21 (RECORD.md, Q3): a
-        # consumer that rejects an unfamiliar version or key breaks the producer every time the
-        # format grows. What it must do instead is say what it did and did not enforce.
+        check.conditions.append("the plan declares no usable plan_version")
+    elif version < SUPPORTED_PLAN_VERSION:
+        # Fully specified by its own version, so it reads normally and cleanly.
         check.notes.append(
-            f"the plan declares plan_version {check.version!r} and this consumer was written "
-            f"against version {SUPPORTED_PLAN_VERSION}. The plan was read, not rejected: the "
-            "keys this consumer knows were checked and anything it does not recognise was "
-            "ignored, so a met result here does not mean the whole plan was verified"
+            f"the plan declares the older plan_version {version}; an older plan is fully "
+            "specified by its own version, so it was read normally"
+        )
+    elif version > SUPPORTED_PLAN_VERSION:
+        check.conditions.append(
+            f"the plan declares plan_version {version} and this consumer implements "
+            f"{SUPPORTED_PLAN_VERSION}, so a key's meaning may have moved: the result is "
+            "conditional and a --strict run will refuse to certify it"
         )
 
     required = plan.get("required_surfaces")
@@ -140,8 +177,24 @@ def check_plan(report: SiteReport, plan: dict[str, Any], path: str = "") -> Plan
             check.problems.append("required_surfaces is not a list of strings")
         else:
             for name in names:
+                if name not in CHECKED_SURFACES and name in KNOWN_SURFACES:
+                    # A surface of this format that this consumer cannot check: a gap here, not a
+                    # finding about the site. The vocabulary is closed and describes what a plan
+                    # may require, so reporting it absent would assert something the code never
+                    # established.
+                    check.unverified_surfaces.append(name)
+                    continue
+                if name not in KNOWN_SURFACES:
+                    # Not a surface of this format. There is no check to be missing and nothing to
+                    # be unverified about; the site simply does not publish what the name denotes.
+                    check.unmet_surfaces.append(name)
+                    continue
                 surface = report.surfaces.get(name)
-                if surface is None or not surface.exists:
+                if surface is None:
+                    # Checked for, but the crawl did not record it. Treated as unverified rather
+                    # than absent, because absent means a fetch was attempted and failed.
+                    check.unverified_surfaces.append(name)
+                elif not surface.exists:
                     check.unmet_surfaces.append(name)
 
     identity = plan.get("identity")
@@ -183,17 +236,20 @@ def check_plan(report: SiteReport, plan: dict[str, Any], path: str = "") -> Plan
 
 
 def apply_to_report(check: PlanCheck, report: SiteReport) -> None:
-    """Add a plan's unmet requirements to a report's findings, so ``--strict`` can gate on them."""
-    from .facts import ERROR, Finding
-
+    """Add a plan's verdict to a report's findings, so ``--strict`` can gate on them."""
     report.plan = {
         "path": check.path,
         "plan_version": check.version,
         "site": check.site,
         "kind": check.kind,
         "passed": check.passed,
-        "required_surfaces_met": not check.unmet_surfaces,
-        "identity_schema_types_met": not check.missing_schema_types,
+        "verdict": check.verdict,
+        "conditions": list(check.conditions),
+        # A sub-check is met only when it was actually checked. Reporting `met: true` for a check
+        # that could not run is the same overclaim as reporting an unchecked surface absent.
+        "required_surfaces_met": not check.unmet_surfaces and not check.unverified_surfaces,
+        "required_surfaces_unverified": list(check.unverified_surfaces),
+        "identity_schema_types_met": not check.missing_schema_types and not check.problems,
         "home_json_ld_types": check.home_json_ld_types,
         "notes": check.notes,
     }
@@ -204,6 +260,28 @@ def apply_to_report(check: PlanCheck, report: SiteReport) -> None:
                 severity=ERROR,
                 message=f"the plan requires {name}, which the site does not publish",
                 subject=name,
+            )
+        )
+    for name in check.unverified_surfaces:
+        report.findings.append(
+            Finding(
+                kind="plan_surface_unverified",
+                severity=CONDITIONAL,
+                message=(
+                    f"the plan requires {name}, which this tool has no check for; it is reported "
+                    "unverified rather than absent, and a --strict run will not certify a plan "
+                    "containing it"
+                ),
+                subject=name,
+            )
+        )
+    for condition in check.conditions:
+        report.findings.append(
+            Finding(
+                kind="plan_verdict_conditional",
+                severity=CONDITIONAL,
+                message=condition,
+                subject=check.path,
             )
         )
     for wanted_type in check.missing_schema_types:
@@ -221,7 +299,7 @@ def apply_to_report(check: PlanCheck, report: SiteReport) -> None:
     for problem in check.problems:
         report.findings.append(
             Finding(
-                kind="plan_unreadable_key",
+                kind="plan_invalid",
                 severity=ERROR,
                 message=f"the plan could not be applied: {problem}",
                 subject=check.path,

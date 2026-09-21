@@ -16,6 +16,7 @@ from pathlib import Path
 from sitewalk import findings
 from sitewalk.crawl import CrawlResult, crawl
 from sitewalk.plan import apply_to_report, check_plan, load_plan
+from sitewalk.report import exit_code, to_dict
 from sitewalk.sources import FileSource
 
 from . import fakes
@@ -81,54 +82,54 @@ class Loading(unittest.TestCase):
 
 class SurfaceChecks(unittest.TestCase):
     def test_a_plan_whose_surfaces_are_all_published_is_met(self):
-        check = check_plan(report_for(), {"required_surfaces": ["robots.txt", "sitemap.xml"]})
+        check = check_plan(report_for(), {"plan_version": 1, "required_surfaces": ["robots.txt", "sitemap.xml"]})
         self.assertEqual(check.unmet_surfaces, [])
         self.assertTrue(check.passed)
 
     def test_a_missing_surface_is_reported_as_unmet(self):
-        check = check_plan(report_for(), {"required_surfaces": ["robots.txt", "security.txt"]})
+        check = check_plan(report_for(), {"plan_version": 1, "required_surfaces": ["robots.txt", "security.txt"]})
         self.assertEqual(check.unmet_surfaces, ["security.txt"])
         self.assertFalse(check.passed)
 
     def test_a_surface_that_is_a_string_rather_than_a_list_is_accepted(self):
-        check = check_plan(report_for(), {"required_surfaces": "robots.txt"})
+        check = check_plan(report_for(), {"plan_version": 1, "required_surfaces": "robots.txt"})
         self.assertEqual(check.unmet_surfaces, [])
 
     def test_a_surface_list_that_is_the_wrong_type_is_a_problem(self):
-        check = check_plan(report_for(), {"required_surfaces": {"robots.txt": True}})
+        check = check_plan(report_for(), {"plan_version": 1, "required_surfaces": {"robots.txt": True}})
         self.assertTrue(check.problems)
 
     def test_an_unmet_surface_becomes_an_error_that_gates(self):
         report = report_for()
-        apply_to_report(check_plan(report, {"required_surfaces": ["security.txt"]}), report)
+        apply_to_report(check_plan(report, {"plan_version": 1, "required_surfaces": ["security.txt"]}), report)
         self.assertIn("plan_surface_missing", [f.kind for f in report.errors])
 
 
 class IdentityChecks(unittest.TestCase):
     def test_a_required_schema_type_the_home_page_carries_is_met(self):
-        check = check_plan(report_for(), {"identity": {"schema_types": ["Organization"]}})
+        check = check_plan(report_for(), {"plan_version": 1, "identity": {"schema_types": ["Organization"]}})
         self.assertEqual(check.missing_schema_types, [])
         self.assertTrue(check.passed)
 
     def test_a_required_schema_type_the_home_page_lacks_is_reported(self):
-        check = check_plan(report_for(), {"identity": {"schema_types": ["LocalBusiness", "Restaurant"]}})
+        check = check_plan(report_for(), {"plan_version": 1, "identity": {"schema_types": ["LocalBusiness", "Restaurant"]}})
         self.assertEqual(check.missing_schema_types, ["Restaurant"])
 
     def test_the_types_the_home_page_carries_are_reported_even_when_they_are_enough(self):
-        check = check_plan(report_for(), {"identity": {"schema_types": ["Organization"]}})
+        check = check_plan(report_for(), {"plan_version": 1, "identity": {"schema_types": ["Organization"]}})
         self.assertIn("Organization", check.home_json_ld_types)
         self.assertIn("WebSite", check.home_json_ld_types)
 
     def test_fields_are_read_but_not_checked_and_that_is_said(self):
         check = check_plan(
-            report_for(), {"identity": {"schema_types": ["Organization"], "fields": ["address"]}}
+            report_for(), {"plan_version": 1, "identity": {"schema_types": ["Organization"], "fields": ["address"]}}
         )
         self.assertTrue(any("identity.fields is not checked" in note for note in check.notes))
         self.assertFalse(check.problems)
 
     def test_a_missing_schema_type_becomes_an_error_that_gates(self):
         report = report_for()
-        apply_to_report(check_plan(report, {"identity": {"schema_types": ["Restaurant"]}}), report)
+        apply_to_report(check_plan(report, {"plan_version": 1, "identity": {"schema_types": ["Restaurant"]}}), report)
         self.assertIn("plan_identity_missing", [f.kind for f in report.errors])
         message = [f.message for f in report.errors if f.kind == "plan_identity_missing"][0]
         self.assertIn("Organization", message)
@@ -136,7 +137,9 @@ class IdentityChecks(unittest.TestCase):
 
 class Leniency(unittest.TestCase):
     def test_an_unknown_key_is_ignored_with_a_note(self):
-        check = check_plan(report_for(), {"required_surfaces": ["robots.txt"], "future_key": {"a": 1}})
+        check = check_plan(
+            report_for(), {"plan_version": 1, "required_surfaces": ["robots.txt"], "future_key": {"a": 1}}
+        )
         self.assertTrue(any("future_key" in note for note in check.notes))
         self.assertTrue(check.passed)
 
@@ -147,52 +150,148 @@ class Leniency(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertIn(key, notes)
 
-    def test_a_partial_plan_is_usable(self):
+    def test_a_plan_with_only_a_version_is_valid_and_met(self):
+        # The format: every key except the version marker is optional, so this plan means
+        # "nothing is decided yet" and there is nothing for it to fail.
+        check = check_plan(report_for(), {"plan_version": 1})
+        self.assertTrue(check.passed)
+        self.assertEqual(check.verdict, "met")
+
+    def test_an_empty_plan_is_a_fault_because_a_file_must_name_its_format(self):
+        # Superseded an earlier expectation that {} was usable. The frozen format requires
+        # plan_version: a file that does not name its format cannot be validated safely.
         check = check_plan(report_for(), {})
-        self.assertTrue(check.passed)
-        self.assertTrue(any("plan_version" in note for note in check.notes))
+        self.assertFalse(check.passed)
+        self.assertEqual(check.verdict, "not met")
+        self.assertTrue(any("plan_version" in problem for problem in check.problems))
 
-    def test_a_plan_version_this_consumer_does_not_know_is_a_note_not_a_failure(self):
-        # Q3, decided by the principal on 2026-09-21: a consumer that rejects an unfamiliar
-        # version or key breaks the producer every time the format grows.
-        check = check_plan(report_for(), {"plan_version": 99, "required_surfaces": ["robots.txt"]})
+    def test_a_known_version_reads_clean(self):
+        check = check_plan(report_for(), {"plan_version": 1, "required_surfaces": ["robots.txt"]})
         self.assertTrue(check.passed)
-        note = " ".join(check.notes)
-        self.assertIn("plan_version", note)
-        self.assertIn("not rejected", note)
+        self.assertEqual(check.verdict, "met")
 
-    def test_an_older_plan_version_is_read_the_same_way(self):
+    def test_an_older_version_reads_normally_and_cleanly(self):
+        # Fully specified by its own version, so there is nothing conditional about it.
         check = check_plan(report_for(), {"plan_version": 0, "required_surfaces": ["robots.txt"]})
         self.assertTrue(check.passed)
-        self.assertTrue(any("not rejected" in note for note in check.notes))
+        self.assertEqual(check.verdict, "met")
+        self.assertEqual(check.conditions, [])
 
-    def test_the_note_says_a_met_result_does_not_mean_the_whole_plan_was_verified(self):
-        check = check_plan(report_for(), {"plan_version": 99})
-        self.assertTrue(any("does not mean the whole plan was verified" in n for n in check.notes))
-
-    def test_a_plan_with_no_version_is_read_anyway(self):
-        check = check_plan(report_for(), {"required_surfaces": ["robots.txt"]})
-        self.assertTrue(check.passed)
-        self.assertFalse(check.problems)
-        self.assertTrue(any("names no plan_version" in note for note in check.notes))
-
-    def test_an_unfamiliar_version_still_enforces_the_keys_it_knows(self):
-        # Leniency about the version is not leniency about the checks: an unmet surface must
-        # still gate even when the plan was written by a newer producer.
-        check = check_plan(report_for(), {"plan_version": 99, "required_surfaces": ["security.txt"]})
-        self.assertEqual(check.unmet_surfaces, ["security.txt"])
+    def test_an_unknown_or_newer_version_makes_the_verdict_conditional(self):
+        # The format's rule 4: an unknown version means a key's meaning may have moved.
+        check = check_plan(report_for(), {"plan_version": 99, "required_surfaces": ["robots.txt"]})
         self.assertFalse(check.passed)
+        self.assertEqual(check.verdict, "met with conditions")
+        self.assertEqual(check.problems, [], "a newer version is not a malformed file")
+        self.assertTrue(check.conditions)
 
-    def test_a_key_of_the_wrong_type_is_a_problem_not_a_crash(self):
-        for plan in (
-            {"required_surfaces": 5},
-            {"required_surfaces": [1, 2]},
-            {"identity": "not an object"},
-            {"identity": {"schema_types": "Organization"}},
-        ):
-            with self.subTest(plan=plan):
+    def test_an_absent_version_is_a_definite_fault(self):
+        # Not conditional: invalid against every version, so no key's semantics are known.
+        check = check_plan(report_for(), {"required_surfaces": ["robots.txt"]})
+        self.assertFalse(check.passed)
+        self.assertEqual(check.verdict, "not met")
+        self.assertTrue(check.problems)
+        self.assertTrue(any("malformed" in problem for problem in check.problems))
+
+    def test_a_mistyped_version_is_a_definite_fault(self):
+        for value in ("1", 1.0, None, [1], True):
+            with self.subTest(value=value):
+                check = check_plan(report_for(), {"plan_version": value})
+                self.assertTrue(check.problems, f"{value!r} was not reported as a fault")
+
+    def test_the_two_failures_say_different_things(self):
+        # Same gate, different claims about the file. Conflating them would tell a reader "this
+        # might be a newer format" when the truth is "this file is malformed".
+        newer = check_plan(report_for(), {"plan_version": 99})
+        absent = check_plan(report_for(), {})
+        newer_text = " ".join(newer.conditions)
+        absent_text = " ".join(absent.problems)
+        self.assertIn("may have moved", newer_text)
+        self.assertNotIn("malformed", newer_text)
+        self.assertIn("malformed", absent_text)
+
+    def test_an_unknown_version_still_enforces_the_keys_it_knows(self):
+        # Leniency about the version is not leniency about the checks.
+        check = check_plan(
+            report_for(), {"plan_version": 99, "required_surfaces": ["security.txt"]}
+        )
+        self.assertEqual(check.unmet_surfaces, ["security.txt"])
+        self.assertEqual(check.verdict, "not met")
+
+    def test_the_fixtures_two_version_cases_are_read_as_the_format_says(self):
+        # Taken from siteplan's own conformance fixture, so the cases are the producer's rather
+        # than invented here. Only these two; the other 38 test the producer's faults and a
+        # consumer is explicitly permitted to tolerate them.
+        import json
+        from pathlib import Path
+
+        fixture = Path("/home/david/projects/siteplan/docs/fixtures/plan-conformance.json")
+        if not fixture.exists():
+            self.skipTest("the siteplan conformance fixture is not present")
+        cases = {c["name"]: c for c in json.loads(fixture.read_text())["cases"]}
+        newer = check_plan(report_for(), cases["unknown-version"]["plan"])
+        self.assertEqual(newer.verdict, "met with conditions")
+        mistyped = check_plan(report_for(), cases["version-not-an-integer"]["plan"])
+        self.assertEqual(mistyped.verdict, "not met")
+        absent = check_plan(report_for(), cases["missing-plan-version"]["plan"])
+        self.assertEqual(absent.verdict, "not met")
+
+    def test_the_seven_valid_conformance_plans_are_read_without_a_fault(self):
+        """The accept-cases: a well-formed plan is read, which is not the same as a conforming site.
+
+        The assertion is deliberately *not* ``verdict == "met"``. A valid plan may require a
+        surface this tool cannot check, or a Schema.org type the fixture site does not carry, and
+        both are legitimate outcomes for a well-formed plan against a particular site. What these
+        seven establish is that the consumer finds no **fault** in a valid plan — no missing
+        version, no wrong type, no malformed shape. Asserting "met" here would have been the same
+        overclaim the plan check itself was making.
+        """
+        import json
+        from pathlib import Path
+
+        fixture = Path("/home/david/projects/siteplan/docs/fixtures/plan-conformance.json")
+        if not fixture.exists():
+            self.skipTest("the siteplan conformance fixture is not present")
+        for case in json.loads(fixture.read_text())["cases"]:
+            if not case.get("valid"):
+                continue
+            with self.subTest(case=case["name"]):
+                check = check_plan(report_for(), case["plan"])
+                self.assertEqual(check.problems, [], case["name"])
+
+    def test_the_thirty_eight_invalid_conformance_plans_are_not_treated_as_site_faults(self):
+        """A consumer is permitted to tolerate what the producer rejects.
+
+        Rule 6: the file is invalid and the producer rejects it, while the consumer may carry it
+        and name what it did not check. So none of the 38 may raise a *site* finding here — they
+        may only ever be read, with their faults noted. Asserting all 45 as accept-cases would have
+        produced a suite failing 38 times while being wrong about the specification.
+        """
+        import json
+        from pathlib import Path
+
+        fixture = Path("/home/david/projects/siteplan/docs/fixtures/plan-conformance.json")
+        if not fixture.exists():
+            self.skipTest("the siteplan conformance fixture is not present")
+        cases = [c for c in json.loads(fixture.read_text())["cases"] if not c.get("valid")]
+        self.assertEqual(len(cases), 38)
+        for case in cases:
+            plan = case["plan"]
+            if not isinstance(plan, dict):
+                continue  # a non-object cannot be read as a plan at all
+            with self.subTest(case=case["name"]):
                 check = check_plan(report_for(), plan)
-                self.assertTrue(check.problems, f"{plan} produced no problem")
+                # A fault inside a key this consumer does not enforce must not become a finding
+                # about the site. The only faults it may report are its own two keys.
+                # Permitted: faults on the keys this consumer enforces. Anything deeper — a
+                # fault in url_rules, kind, pages, offering, or a schema type's spelling — is the
+                # producer's business and must not surface as a finding about the site.
+                enforced = ("plan_version", "required_surfaces", "identity")
+                for problem in check.problems:
+                    self.assertTrue(
+                        any(key in problem for key in enforced),
+                        f"{case['name']}: fault outside the enforced keys: {problem}",
+                    )
 
     def test_an_unknown_key_never_fails_the_check(self):
         check = check_plan(
@@ -220,9 +319,142 @@ class Leniency(unittest.TestCase):
 class NoHomePage(unittest.TestCase):
     def test_a_plan_requiring_identity_types_with_no_home_page_is_a_problem(self):
         report = findings.analyse(CrawlResult(target="https://example.com", origin="https://example.com"))
-        check = check_plan(report, {"identity": {"schema_types": ["Organization"]}})
+        check = check_plan(report, {"plan_version": 1, "identity": {"schema_types": ["Organization"]}})
         self.assertTrue(check.problems)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheVerdictIsHonestAboutWhatItKnows(unittest.TestCase):
+    """U7: the report states what is true; the gate decides what is tolerable.
+
+    Every assertion here reads a machine-readable value — a severity, a count, an exit code — and
+    not a message string, so a later change to the wording cannot make these pass while the
+    behaviour changes.
+    """
+
+    def report_for_plan(self, plan):
+        report = report_for()
+        apply_to_report(check_plan(report, plan, path="site.json"), report)
+        return report
+
+    def test_a_known_version_produces_no_conditional_finding(self):
+        report = self.report_for_plan({"plan_version": 1, "required_surfaces": ["robots.txt"]})
+        self.assertEqual([f.kind for f in report.conditionals], [])
+        self.assertEqual(exit_code(report, strict=True), 1)  # the fixture's own findings gate
+
+    def test_an_older_version_produces_no_conditional_finding(self):
+        report = self.report_for_plan({"plan_version": 0, "required_surfaces": ["robots.txt"]})
+        self.assertEqual([f.kind for f in report.conditionals], [])
+
+    def test_an_unknown_version_is_conditional_and_gates_under_strict(self):
+        report = self.report_for_plan({"plan_version": 99})
+        kinds = [f.kind for f in report.conditionals]
+        self.assertIn("plan_verdict_conditional", kinds)
+        self.assertEqual([f.severity for f in report.conditionals], ["conditional"])
+        self.assertEqual(report.plan["verdict"], "met with conditions")
+        self.assertEqual(exit_code(report, strict=True), 1)
+
+    def test_an_absent_version_is_an_error_and_gates_under_strict(self):
+        report = self.report_for_plan({})
+        self.assertIn("plan_invalid", [f.kind for f in report.errors])
+        self.assertEqual(report.plan["verdict"], "not met")
+        self.assertEqual(exit_code(report, strict=True), 1)
+
+    def test_a_mistyped_version_is_an_error_and_gates_under_strict(self):
+        report = self.report_for_plan({"plan_version": "1"})
+        self.assertIn("plan_invalid", [f.kind for f in report.errors])
+        self.assertEqual(exit_code(report, strict=True), 1)
+
+    def test_the_version_finding_reaches_the_json_with_its_severity(self):
+        report = self.report_for_plan({"plan_version": 99})
+        data = to_dict(report)
+        severities = {f["kind"]: f["severity"] for f in data["findings"]}
+        self.assertEqual(severities["plan_verdict_conditional"], "conditional")
+        self.assertEqual(data["finding_counts"]["conditional"], 1)
+        self.assertIn("conditional", data["severities"])
+        self.assertEqual(data["plan"]["verdict"], "met with conditions")
+
+    def test_the_gating_count_matches_the_policy_table(self):
+        # The JSON tells a machine reader the verdict without its having to infer it from an exit
+        # code, which is what design A exists to prevent. Run against the **bare** fixture, whose
+        # own findings are nil, so the count is the plan's contribution and nothing else.
+        def bare_report(plan):
+            report = findings.analyse(_crawl(FIXTURES / "bare-site"))
+            apply_to_report(check_plan(report, plan, path="site.json"), report)
+            return report
+
+        # Measured as the plan's own contribution, so the fixture's unrelated findings cannot
+        # make the assertion pass for the wrong reason.
+        baseline = to_dict(findings.analyse(_crawl(FIXTURES / "bare-site")))["finding_counts"]
+        # A malformed plan contributes **two** gating findings and that is the honest shape: an
+        # error saying the file is malformed, and a conditional saying that with no usable version
+        # the semantics of no key are known. They are different claims and both are true.
+        for plan, gating, conditional in (
+            ({"plan_version": 1}, 0, 0),
+            ({"plan_version": 99}, 1, 1),   # valid file, unknown specification: conditional only
+            ({}, 2, 1),                     # invalid file: an error, plus the unknown-semantics note
+        ):
+            with self.subTest(plan=plan):
+                data = to_dict(bare_report(plan))
+                counts = data["finding_counts"]
+                self.assertEqual(counts["gating"] - baseline["gating"], gating, plan)
+                self.assertEqual(counts["conditional"] - baseline["conditional"], conditional, plan)
+
+
+class AnUncheckedSurfaceIsUnverifiedNotAbsent(unittest.TestCase):
+    """U7's fifth criterion. `rss.xml` and `json-ld` are in the format's closed vocabulary and this
+    consumer has no check for them, so it must not claim the site lacks them."""
+
+    def test_a_vocabulary_surface_with_no_check_is_unverified(self):
+        check = check_plan(report_for(), {"plan_version": 1, "required_surfaces": ["rss.xml"]})
+        self.assertEqual(check.unverified_surfaces, ["rss.xml"])
+        self.assertEqual(check.unmet_surfaces, [], "reported as absent without being looked for")
+        self.assertEqual(check.verdict, "met with conditions")
+
+    def test_the_unverified_surface_is_a_conditional_finding_that_gates_under_strict(self):
+        report = report_for()
+        apply_to_report(
+            check_plan(report, {"plan_version": 1, "required_surfaces": ["rss.xml"]}), report
+        )
+        kinds = {f.kind: f.severity for f in report.conditionals}
+        self.assertEqual(kinds.get("plan_surface_unverified"), "conditional")
+        self.assertNotIn("plan_surface_missing", [f.kind for f in report.findings])
+        self.assertEqual(exit_code(report, strict=True), 1)
+
+    def test_the_finding_does_not_say_the_site_lacks_it(self):
+        # The exact defect this replaced: "the plan requires rss.xml, which the site does not
+        # publish" asserted something the code never established.
+        report = report_for()
+        apply_to_report(
+            check_plan(report, {"plan_version": 1, "required_surfaces": ["rss.xml"]}), report
+        )
+        message = [f.message for f in report.findings if f.kind == "plan_surface_unverified"][0]
+        self.assertIn("no check for", message)
+        self.assertNotIn("does not publish", message)
+
+    def test_a_checked_surface_that_is_genuinely_absent_is_still_unmet(self):
+        # The distinction must not soften a real finding: a missing robots.txt is a fact.
+        report = findings.analyse(_crawl(FIXTURES / "bare-site"))
+        apply_to_report(
+            check_plan(report, {"plan_version": 1, "required_surfaces": ["robots.txt"]}), report
+        )
+        self.assertIn("plan_surface_missing", [f.kind for f in report.errors])
+        self.assertNotIn("plan_surface_unverified", [f.kind for f in report.findings])
+
+    def test_a_name_outside_the_vocabulary_is_neither_checked_nor_claimed_unverified(self):
+        # `security.txt` is not a surface of this format, so there is no check to be missing.
+        check = check_plan(report_for(), {"plan_version": 1, "required_surfaces": ["security.txt"]})
+        self.assertEqual(check.unmet_surfaces, ["security.txt"])
+        self.assertEqual(check.unverified_surfaces, [])
+
+
+def _crawl(directory):
+    from sitewalk.crawl import crawl as run_crawl
+    from sitewalk.sources import FileSource
+
+    source = FileSource(directory)
+    return run_crawl(source, source.origin)
+

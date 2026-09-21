@@ -80,12 +80,25 @@ it.
 python3 -m sitewalk --dir build/ --plan site.json --strict
 ```
 
-The plan file format is owned by the `siteplan` project. Two keys are checked:
-`required_surfaces` against the files the site publishes, and `identity.schema_types` against the
-home page's JSON-LD. Every other key is named in the output as **not checked**, with the reason.
-An unknown key or an unfamiliar `plan_version` is read and noted, never fatal, because a consumer
-that rejects a growing format breaks the producer. A plan that cannot be read exits 2 — a gate
-that cannot read its own plan must not report a pass.
+The plan file format is owned by the [`siteplan`](https://github.com/perspicuity-ai/siteplan)
+project. Two keys are checked: `required_surfaces` against the files the site publishes, and
+`identity.schema_types` against the home page's JSON-LD. Every other key is named in the output as
+**not checked**, with the reason.
+
+The verdict depends on what this tool actually knows:
+
+| Plan | Verdict | `--strict` |
+| --- | --- | --- |
+| `plan_version` 1, or older | `met` — an older plan is fully specified by its own version | as the findings dictate |
+| A **newer or unknown** `plan_version` | `met with conditions` — the file may be valid against a specification this tool does not hold, so a key's meaning may have moved | **exits 1** |
+| An **absent or mistyped** `plan_version` | `not met` — the file is malformed, and with no usable version no key can be trusted | **exits 1** |
+| A required surface in the format's vocabulary that this tool has **no check for** (today `rss.xml`, `json-ld`) | `met with conditions` — reported **unverified**, never absent | **exits 1** |
+| An unknown key | ignored, **and named**, so a `met` never hides something that was not checked | not on its own |
+
+"Not found" and "not checked" are different claims and the output keeps them apart: a required
+surface this tool cannot look for is *unverified*, not missing. A consumer that rejects a growing
+format breaks the producer, so an unknown key is read and disclosed rather than refused. A plan
+that cannot be read at all exits 2 — a gate that cannot read its own plan must not report a pass.
 
 ## What it reports
 
@@ -97,10 +110,16 @@ sitemap, linked from nowhere); duplicate titles; duplicate descriptions; missing
 canonicals pointing at another host; pages carrying no JSON-LD; malformed JSON-LD; internal links
 that do not return 200; and whether `robots.txt`, `sitemap.xml` and `llms.txt` exist.
 
-Findings have two severities. An **error** is something wrong with the site as built and gates
-under `--strict`. A **note** is an observation or a choice the site made — a script-rendered page,
-a missing `llms.txt`, a truncated body — and does not gate, because a gate that fails on a site's
-design choices gets switched off, and a switched-off gate measures nothing. A missing `llms.txt`
+Findings have three severities, and they are defined in the output itself so nothing has to be
+inferred from an exit code. An **error** is something wrong with the site as built. A
+**conditional** finding means the verdict depends on something this tool does not know — an
+unknown plan version, or a surface it has no check for. A **note** is an observation or a choice
+the site made — a script-rendered page, a missing `llms.txt`, a truncated body.
+
+**The report states what is true; the gate decides what is tolerable.** `--strict` maps severities
+to an exit code and never creates a finding, so two runs of the same site against the same plan
+cannot disagree about what is true. Error and conditional both gate; notes do not, because a gate
+that fails on a site's design choices gets switched off, and a switched-off gate measures nothing. A missing `llms.txt`
 is a note on purpose: it is the site's choice, and Ahrefs measured that 97% of `llms.txt` files
 received no requests across 137,000 sites
 ([study](https://ahrefs.com/blog/llmstxt-study/)).

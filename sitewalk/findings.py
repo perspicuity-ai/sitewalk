@@ -48,8 +48,21 @@ def _named(items: Iterable[str]) -> str:
     return ", ".join(listed[:_MAX_NAMED]) + f", and {len(listed) - _MAX_NAMED} more"
 
 
-def _add(report: SiteReport, kind: str, message: str, subject: str | None = None) -> None:
-    severity = INFO if kind in _INFO_KINDS else ERROR
+def _add(
+    report: SiteReport,
+    kind: str,
+    message: str,
+    subject: str | None = None,
+    severity: str | None = None,
+) -> None:
+    """Add a finding. ``severity`` overrides the kind's default, for the conditional verdicts.
+
+    The default is derived from the kind so a new site finding cannot accidentally be
+    non-gating; the override exists because whether a verdict is conditional is a property of
+    what the consumer knows, not of the kind.
+    """
+    if severity is None:
+        severity = INFO if kind in _INFO_KINDS else ERROR
     report.findings.append(
         Finding(kind=kind, severity=severity, message=message, subject=subject)
     )

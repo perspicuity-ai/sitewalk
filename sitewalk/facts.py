@@ -9,11 +9,21 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-#: Finding severities. Only ``error`` gates under ``--strict``; ``info`` is a note that is
-#: reported and does not fail a build, because it describes a design choice of the site rather
-#: than a change under test. See D10 in docs/DESIGN.md.
+#: Finding severities. The report states what is true; the gate decides what is tolerable
+#: (docs/DESIGN.md, D10). ``--strict`` maps these to exit codes and never creates a finding.
+#:
+#: * ``error`` — something is wrong with the site as built.
+#: * ``conditional`` — the verdict depends on something this consumer does not know, so the result
+#:   is not a clean one. An unknown or newer plan version, an absent or mistyped one, or a required
+#:   surface this tool has no check for. Disclosed in every run; gates under ``--strict``.
+#: * ``info`` — an observation or a site's own choice, with nothing left unknown. Never gates.
 ERROR = "error"
+CONDITIONAL = "conditional"
 INFO = "info"
+
+#: Which severities ``--strict`` turns into a non-zero exit. A policy table rather than a
+#: condition buried in the exit path, so a reader can see the policy without reading the code.
+GATING_SEVERITIES = (ERROR, CONDITIONAL)
 
 #: Bodies above this many characters are not kept. Nothing downstream needs the bytes, only the
 #: facts extracted from them, and a crawl should not hold a site in memory.
@@ -147,6 +157,15 @@ class SiteReport:
     @property
     def errors(self) -> list[Finding]:
         return [f for f in self.findings if f.severity == ERROR]
+
+    @property
+    def conditionals(self) -> list[Finding]:
+        return [f for f in self.findings if f.severity == CONDITIONAL]
+
+    @property
+    def gating(self) -> list[Finding]:
+        """Every finding ``--strict`` refuses to accept: errors and conditionals."""
+        return [f for f in self.findings if f.severity in GATING_SEVERITIES]
 
     @property
     def infos(self) -> list[Finding]:

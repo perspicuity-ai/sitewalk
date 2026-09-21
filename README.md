@@ -64,7 +64,15 @@ python3 -m sitewalk --url https://example.com --max-pages 20 --delay 0.5 --stric
 ```
 
 It fetches `/robots.txt` and `/sitemap.xml`, collects the URLs they name, follows internal links
-from the home page, and stays inside the submitted origin. `robots.txt` is obeyed in both modes.
+from the home page, and stays inside the submitted origin.
+
+**`robots.txt` is obeyed in both modes, and the skip is reported.** It is a statement about the
+site's content rather than about the transport, so a tool that reports what a machine can read does
+not read what the site has refused. There is no flag to override it: a gate whose scope depends on
+a switch is a gate nobody can compare across runs. When paths are skipped, the report's header
+states how many, `limits.paths_skipped_robots` carries the count in the JSON, and each skip in the
+notes quotes the rule **verbatim as it appears in the file**, so you can search for it and find
+it.
 
 ### Against a plan
 

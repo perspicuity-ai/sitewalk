@@ -322,10 +322,18 @@ def analyse(result: CrawlResult) -> SiteReport:
             f"{len(result.refused)} request(s) were refused by the address guard: "
             + _named(result.refused)
         )
-    for url, reason in result.skipped:
-        report.notes.append(f"not fetched: {relative_path(url)} — {reason}")
+    for skip in result.skipped:
+        line = f"not fetched: {relative_path(skip.url)} — {skip.reason}"
+        if skip.rule:
+            # Quoted verbatim, so a reader can search robots.txt for it and find it.
+            line += f" (robots.txt: {skip.rule})"
+        report.notes.append(line)
+    report.skipped_robots = [s for s in result.skipped if s.rule]
 
     report.limits = {
+        # Stated here as well as in the notes, so a reader who reads only the summary cannot
+        # reach the end of the report without learning that something was excluded.
+        "paths_skipped_robots": len(report.skipped_robots),
         "requests_made": result.requests_made,
         "pages_read": len(result.pages),
         "link_checks_made": result.link_checked,

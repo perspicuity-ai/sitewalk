@@ -58,6 +58,7 @@ rather than hidden: see D6.
 | Default body cap | 2 MiB (truncated, and said so) | D7 |
 | Default crawl bound | 50 pages | D7 |
 | Bounds on what is read | `--max-pages` is the only one; there is no separate link-check bound | D7 |
+| Robots skips | Counted in the header and in `limits.paths_skipped_robots`; each quotes its rule verbatim | D8 |
 | Text that looks script-rendered | `visible_text < 200` chars **and** (`script_bytes ≥ 5000` **or** an empty app-root marker) | D6 |
 | Python floor | 3.11 — the principal's specification; confirmed present as 3.11.3 | D3 |
 

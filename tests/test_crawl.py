@@ -173,7 +173,7 @@ class RobotsIsObeyed(unittest.TestCase):
 
     def test_a_disallowed_path_is_recorded_as_skipped(self):
         result, _source = run(site())
-        self.assertTrue(any("disallows" in reason for _url, reason in result.skipped))
+        self.assertTrue(any("disallows" in skip.reason for skip in result.skipped))
 
     def test_a_disallowed_path_named_in_the_sitemap_is_skipped_too(self):
         http = site()
@@ -239,7 +239,7 @@ class Bounds(unittest.TestCase):
         result, _source = run(http, max_pages=50)
         self.assertEqual(result.link_checked, 0)
         self.assertNotIn("/private/page/", http.paths_requested)
-        self.assertTrue(any("disallows" in reason for _url, reason in result.skipped))
+        self.assertTrue(any("disallows" in skip.reason for skip in result.skipped))
 
     def test_the_page_bound_is_the_only_bound_on_what_is_checked(self):
         # There is no separate link-check bound. A link the crawl can reach is answered by the

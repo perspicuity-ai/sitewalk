@@ -96,6 +96,20 @@ class Surface:
 
 
 @dataclass
+class Skip:
+    """A URL that was not fetched, and why.
+
+    ``rule`` is the ``robots.txt`` line that caused the skip when one did, carried verbatim so the
+    report can quote what disallowed the path rather than only saying that something did. It is
+    ``None`` for a skip with another cause.
+    """
+
+    url: str
+    reason: str
+    rule: str | None = None
+
+
+@dataclass
 class Finding:
     """One site-wide observation. ``subject`` names the page or URL it is about."""
 
@@ -125,6 +139,7 @@ class SiteReport:
     json_ld_type_counts: dict[str, int] = field(default_factory=dict)
     sitemap_named: list[str] = field(default_factory=list)
     sitemap_unreached: list[str] = field(default_factory=list)
+    skipped_robots: list[Skip] = field(default_factory=list)
     limits: dict[str, Any] = field(default_factory=dict)
     plan: dict[str, Any] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)

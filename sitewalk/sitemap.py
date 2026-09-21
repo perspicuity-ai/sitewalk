@@ -16,6 +16,25 @@ from typing import Iterable
 MAX_SITEMAP_DEPTH = 5
 
 
+@dataclass(frozen=True)
+class Rule:
+    """One ``Disallow`` rule, with the line it came from.
+
+    ``pattern`` is the path prefix as matched. ``source_line`` is the line **exactly as it appears
+    in ``robots.txt``** — leading whitespace, internal spacing and any trailing comment intact, and
+    without its newline, because ``splitlines`` removes it and a quote carrying a terminator is not
+    something a reader can select in a file.
+
+    The source line is carried because the report quotes it: a reader takes the string out of the
+    report, searches the file, and finds it. It is **not** the parser's ``line`` variable, which is
+    ``raw.split("#", 1)[0].strip()``; on a line with a trailing comment the two differ, and quoting
+    the stripped form silently drops the comment.
+    """
+
+    pattern: str
+    source_line: str
+
+
 @dataclass
 class SitemapResult:
     """What one sitemap (and the indexes under it) named."""
@@ -68,18 +87,18 @@ def parse_sitemap(text: str) -> SitemapResult:
     return result
 
 
-def parse_robots(text: str) -> tuple[list[str], list[str]]:
-    """Read ``robots.txt`` and return ``(sitemaps, disallowed_paths)``.
+def parse_robots(text: str) -> tuple[list[str], list[Rule]]:
+    """Read ``robots.txt`` and return ``(sitemaps, disallow_rules)``.
 
     ``Disallow`` lines are honoured for the catch-all group and for our own name. The rules are
     matched as path prefixes, which is what the convention means in practice; ``Crawl-delay`` is
     ignored because it is not in the convention and ``--delay`` is explicit.
     """
     sitemaps: list[str] = []
-    disallowed: list[str] = []
+    disallowed: list[Rule] = []
     applies = False
-    for raw_line in (text or "").splitlines():
-        line = raw_line.split("#", 1)[0].strip()
+    for source_line in (text or "").splitlines():
+        line = source_line.split("#", 1)[0].strip()
         if not line or ":" not in line:
             continue
         field, value = line.split(":", 1)
@@ -92,16 +111,18 @@ def parse_robots(text: str) -> tuple[list[str], list[str]]:
             agent = value.lower()
             applies = agent in ("*", "sitewalk")
         elif field == "disallow" and applies:
-            if value and value not in disallowed:
-                disallowed.append(value)
+            if value and all(rule.pattern != value for rule in disallowed):
+                disallowed.append(Rule(pattern=value, source_line=source_line))
     return sitemaps, disallowed
 
 
-def is_disallowed(path: str, disallowed: Iterable[str]) -> bool:
-    """True when a path prefix in ``robots.txt`` covers this path."""
-    for rule in disallowed:
-        if rule == "/":
-            return True
-        if path.startswith(rule):
-            return True
-    return False
+def is_disallowed(path: str, rules: Iterable[Rule]) -> Rule | None:
+    """The rule that disallows this path, or None.
+
+    Returns the rule rather than a bool so the report can quote the line that caused the skip. A
+    caller that only needs the answer can test it for truth.
+    """
+    for rule in rules:
+        if rule.pattern == "/" or path.startswith(rule.pattern):
+            return rule
+    return None

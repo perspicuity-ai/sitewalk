@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from . import sitemap
-from .facts import Page, PageFact, Surface
+from .facts import Page, PageFact, Skip, Surface
 from .pages import facts_from
 from .sources import PageSource
 from .urls import SURFACE_PATHS, normalise, origin_of, relative_path, same_origin
@@ -31,7 +31,7 @@ class CrawlResult:
     surfaces: dict[str, Surface] = field(default_factory=dict)
     sitemap_urls: list[str] = field(default_factory=list)
     sitemap_errors: list[str] = field(default_factory=list)
-    skipped: list[tuple[str, str]] = field(default_factory=list)
+    skipped: list[Skip] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     refused: list[str] = field(default_factory=list)
     source_kind: str = ""
@@ -43,6 +43,15 @@ class CrawlResult:
     cap_reached: bool = False
     started_at: str = ""
     finished_at: str = ""
+
+
+def _robots_skip(url: str, rule) -> Skip:
+    """A skip caused by a ``robots.txt`` rule, carrying the line that caused it."""
+    return Skip(
+        url=url,
+        reason="robots.txt disallows this path for our user agent",
+        rule=rule.source_line,
+    )
 
 
 def _stamp() -> str:
@@ -171,10 +180,9 @@ def crawl(
         if url in fetched:
             continue
         fetched.add(url)
-        if relative_path(url) not in _PAGE_EXCEPTIONS and sitemap.is_disallowed(
-            relative_path(url), disallowed
-        ):
-            result.skipped.append((url, "robots.txt disallows this path for our user agent"))
+        rule = sitemap.is_disallowed(relative_path(url), disallowed)
+        if relative_path(url) not in _PAGE_EXCEPTIONS and rule is not None:
+            result.skipped.append(_robots_skip(url, rule))
             continue
         page = read(url)
         if page.truncated:
@@ -218,10 +226,11 @@ def crawl(
             )
             break
         if relative_path(url) in _PAGE_EXCEPTIONS:
-            result.skipped.append((url, "a surface, already read as a surface"))
+            result.skipped.append(Skip(url=url, reason="a surface, already read as a surface"))
             continue
-        if sitemap.is_disallowed(relative_path(url), disallowed):
-            result.skipped.append((url, "robots.txt disallows this path for our user agent"))
+        rule = sitemap.is_disallowed(relative_path(url), disallowed)
+        if rule is not None:
+            result.skipped.append(_robots_skip(url, rule))
             continue
         page = read(url)
         fetched.add(url)

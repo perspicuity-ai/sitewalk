@@ -202,7 +202,7 @@ class TheOfflineCrawl(unittest.TestCase):
         result = dir_crawl()
         reached = {fact.url for fact in result.pages}
         self.assertNotIn("https://localhost/private/", reached)
-        self.assertTrue(any("/private/" in url for url, _reason in result.skipped))
+        self.assertTrue(any("/private/" in skip.url for skip in result.skipped))
 
     def test_it_never_leaves_the_origin(self):
         result = dir_crawl()
@@ -407,3 +407,63 @@ class TheJsonReportIsStable(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheRobotsSkipIsUnmissable(unittest.TestCase):
+    """U6: a gate that skips pages must not be able to pass while under-reporting.
+
+    A reader who reads only the summary must learn that paths were excluded, and a reader who
+    follows the quote must be able to find the rule in the file it came from. Each of the three
+    surfaces is asserted on its own, not through a helper that both produces and checks it.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.report = findings.analyse(dir_crawl())
+        cls.robots_text = (EXAMPLE / "robots.txt").read_text()
+
+    def test_the_count_is_in_the_report_header(self):
+        from sitewalk.report import to_text
+
+        header = to_text(self.report).split("claim boundary")[0]
+        self.assertIn("excluded:", header)
+        self.assertIn("1 path(s)", header)
+
+    def test_the_count_is_in_the_json_limits(self):
+        from sitewalk.report import to_dict
+
+        limits = to_dict(self.report)["limits"]
+        self.assertEqual(limits["paths_skipped_robots"], 1)
+
+    def test_each_skip_names_its_path_and_quotes_its_rule(self):
+        from sitewalk.report import to_dict
+
+        skipped = to_dict(self.report)["skipped_robots"]
+        self.assertEqual(len(skipped), 1)
+        self.assertEqual(skipped[0]["path"], "/private/")
+        self.assertIn("Disallow:", skipped[0]["rule"])
+
+    def test_the_quoted_rule_is_byte_identical_to_the_fixture_line(self):
+        # The requirement: take the rule out of the report, search the file, find it. Asserted as
+        # equality against the source line, not as membership, because the parser's stripped
+        # variable is a substring of the source line and a membership test would pass on it.
+        from sitewalk.report import to_dict
+
+        rule = to_dict(self.report)["skipped_robots"][0]["rule"]
+        self.assertIn(rule, self.robots_text)
+        self.assertIn("# legacy, revisit", rule)
+        self.assertTrue(rule.startswith("  "), "leading whitespace was normalised away")
+
+    def test_the_note_also_carries_the_quoted_rule(self):
+        from sitewalk.report import to_text
+
+        notes = to_text(self.report).split("== Notes ==")[1]
+        self.assertIn("/private/", notes)
+        self.assertIn("# legacy, revisit", notes)
+
+    def test_a_run_with_no_skips_says_nothing_about_exclusion(self):
+        # The header line must not appear when the count is zero, or it stops meaning anything.
+        from sitewalk.report import to_text
+
+        report = findings.analyse(dir_crawl(BARE))
+        self.assertNotIn("excluded:", to_text(report).split("claim boundary")[0])

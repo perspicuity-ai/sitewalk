@@ -60,6 +60,10 @@ def to_dict(report: SiteReport) -> dict[str, Any]:
             "anything rendered by JavaScript after load",
         ],
         "limits": report.limits,
+        "skipped_robots": [
+            {"path": relative_path(skip.url), "url": skip.url, "rule": skip.rule}
+            for skip in report.skipped_robots
+        ],
         "status_counts": report.status_counts,
         "json_ld_type_counts": report.json_ld_type_counts,
         "sitemap": {
@@ -151,6 +155,13 @@ def to_text(report: SiteReport) -> str:
         f"{limits.get('link_checks_made', 0)} link checks"
         + (", page cap reached" if limits.get("page_cap_reached") else "")
     )
+    # In the header, not only in the notes: a reader who reads only the summary must not be able
+    # to reach the end without learning that paths were excluded.
+    if limits.get("paths_skipped_robots"):
+        lines.append(
+            f"excluded: {limits['paths_skipped_robots']} path(s) were not fetched because "
+            "robots.txt disallows them; the rules are quoted in the notes below"
+        )
     lines.append("")
     lines.append("claim boundary: " + BOUNDARY)
     lines.append(

@@ -1,5 +1,5 @@
 # Example fixture site.
 User-agent: *
-Disallow: /private/
+  Disallow:   /private/   # legacy, revisit
 
 Sitemap: https://localhost/sitemap.xml

@@ -2,14 +2,14 @@
 # Mechanical check of the project's Perspicuity records.
 #
 # The checker ships with the Perspicuity skill rather than with the project, so it is looked up
-# at run time. When it is absent the check is skipped loudly rather than silently passing: a
-# skipped check and a passing check must not look the same.
+# at run time from a list of known locations. Set PERSPICUITY_CHECKER to override.
+#
+# When the checker is absent the check is skipped LOUDLY and exits 0, saying that it skipped.
+# A skipped check and a passing check must not look the same. Set
+# ELIGIBILITY_RECORDS_REQUIRED=1 to make a missing checker a hard failure instead.
 #
 # Usage: check_records.sh [project-root]
 # With no argument the project root is this script's parent directory.
-#
-# The full dashboard is useful interactively and noise in CI, so this prints the summary and the
-# mechanical findings, and dumps everything only when something fails.
 set -eu
 
 if [ "$#" -ge 1 ]; then
@@ -18,30 +18,34 @@ else
   ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 fi
 
-# The skill can be installed in more than one place, and the installation layout has changed
-# between skill versions. Probe in order and take the first that carries the checker, so a
-# renamed install directory shows up as a skip rather than as an unexplained pass.
-if [ -n "${PERSPICUITY_CHECKER:-}" ]; then
-  CHECKER="$PERSPICUITY_CHECKER"
-else
-  CHECKER=""
+find_checker() {
+  if [ -n "${PERSPICUITY_CHECKER:-}" ]; then
+    printf '%s\n' "$PERSPICUITY_CHECKER"
+    return 0
+  fi
   for candidate in \
     "$HOME/.dsh/skills/perspicuity/scripts" \
     "$HOME/.codex/skills/perspicuity/scripts" \
     "$HOME/.claude/skills/perspicuity/scripts"
   do
     if [ -d "$candidate/perspicuity_dashboard" ]; then
-      CHECKER="$candidate"
-      break
+      printf '%s\n' "$candidate"
+      return 0
     fi
   done
-  CHECKER="${CHECKER:-$HOME/.dsh/skills/perspicuity/scripts}"
-fi
+  return 1
+}
 
-if [ ! -d "$CHECKER/perspicuity_dashboard" ]; then
-  echo "note: the Perspicuity checker was not found at $CHECKER."
-  echo "      skipping the mechanical record check. Set PERSPICUITY_CHECKER to the"
-  echo "      skill's scripts directory to enable it. This is a skip, not a pass."
+if ! CHECKER="$(find_checker)"; then
+  echo "note: the Perspicuity checker was not found in any known location."
+  echo "      Looked in PERSPICUITY_CHECKER, ~/.dsh/skills/perspicuity/scripts,"
+  echo "      ~/.codex/skills/perspicuity/scripts, ~/.claude/skills/perspicuity/scripts."
+  if [ "${ELIGIBILITY_RECORDS_REQUIRED:-0}" = "1" ]; then
+    echo "error: ELIGIBILITY_RECORDS_REQUIRED=1 and the checker is missing." >&2
+    exit 1
+  fi
+  echo "      SKIPPED, not passed. Set PERSPICUITY_CHECKER to the skill's scripts"
+  echo "      directory to enable it."
   exit 0
 fi
 

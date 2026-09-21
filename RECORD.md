@@ -1,13 +1,13 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 2
+revision: 3
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-21T12:44:00-06:00"
+updated_at: "2026-09-21T13:05:00-06:00"
 record_status: open
-work_status: submitted
+work_status: active
 ---
 
 # Sitewalk
@@ -18,60 +18,61 @@ conditions, the alternatives, the recommendation, the units, and the review.
 
 ## Current position
 
-Mode: **`Plan`**. The principal changed the mode in a direct instruction on 2026-09-21, after
-this record had been registered and acted on in `Run`. The earlier mode is preserved here with
-its reason: revision 1 declared `Run` because the principal's first message prescribed the frame,
-the tool and its specification in full, leaving nothing to select. The change is recorded because
-the work's purpose changed — the principal now wants the basis, the alternatives and the units
-ratified **before** implementation, and a planning run stops at that boundary even though the
-authority to act already exists. This revision is the statement of work and the grant request;
-it selects nothing.
+Mode: **`Run`**. Revision 1 declared `Run` because the principal's first message prescribed the
+frame, the tool and its specification in full, leaving nothing to select. Revision 2 changed to
+`Plan` on the principal's instruction, because he then wanted the basis, alternatives and units
+ratified before implementation. This revision returns to `Run`: revision 2's plan has been
+**ratified**, the grant is registered below, and the mode now carries that settled choice through
+its units and stops at the return. Each mode change and its reason is preserved rather than
+overwritten.
 
-Principal: David. Decider: David. Moss prepares the basis and recommends; Moss does not ratify.
+Principal: David. Decider: David. Moss prepares the basis and recommends; Moss did not select.
 
 Work owner: Moss (coordinator).
 
-Decision: `pending` — **David ratifies the course of action and the grant; Moss does not select.**
-The product frame, the claim boundary and the tool specification are `inherited` from the
-principal (2026-09-21, [`CONTEXT.md`](CONTEXT.md)) and are reproduced as inherited below, not
-reopened. The choice now pending is which of the five alternatives in this revision to build,
-and on what grant.
+Decision: `selected` — **alternative A**, ratified by David on 2026-09-21 against basis revision 2
+of this record. The selection is recorded in Act under *Selection*, with the grant it authorises
+and the two answers that narrowed it (Q3: accept any `plan_version` and ignore keys this consumer
+does not know; Q5: a missing `llms.txt` must not gate). The product frame, the claim boundary and
+the tool specification remain `inherited` from the principal (2026-09-21,
+[`CONTEXT.md`](CONTEXT.md)) and are not reopened.
 
-Work scope: The Statement of Work itself, and the ratification it asks for. The delivery this
-record would own once ratified is the `sitewalk` package as scoped in Act below — units U1–U5,
-not U0.
+Work scope: **U1**, the offline gate — reconciled, verified, and where necessary cut back against
+the registered facts contract. The units after it are granted but not picked up; each registers
+its own pickup plan before it starts.
 
-Work: revision 2 registers this basis **and accounts for work that was produced ahead of it**
-(see *Work already in the tree* below: 15 modules, 2,592 lines of package; 9 test modules and
-13 fixture files, 2,378 lines of test code; 240 tests, 238 passing, 2 failing). None of it is
-committed, none of it is covered by a ratified plan, and none of it is ratified by this revision
-merely by being described.
+Work: revision 3 registers the selection, the grant and U1's pickup plan. The `Run` increment that
+produced the package in the tree is accounted for in Act (*Work already in the tree*) and is not
+ratified by being described: U1's reconciliation decides what survives, and this record carries
+the outcome when U1 returns.
 
-Outcome: unknown. Nothing has yet been observed against a real built site or a real live site.
+Outcome: unknown. U1 has not run. Nothing has been observed against a real built site or a real
+live site.
 
-Next: David — read this Statement of Work, answer the open questions that block him (the U4
-domain grant is the one that gates the most), and either ratify one of the alternatives and the
-grant requested in Act, or send it back with the changes he wants.
+Next: Moss — carry out U1's registered pickup plan, then register U2's pickup plan before
+implementing U2.
 
-Dependency: Nothing blocks this planning increment. The whole of Act is blocked on the
-ratification decision, as a planning run requires.
+Dependency: Nothing blocks U1. **U4 is blocked on open question Q2**: the principal has not named
+which project's `build/` may be tested against, and no `build/` directory exists in this
+workspace. U4 must not run until he answers.
 
-Waiting on: David (principal), for the ratification and for the open questions in Act.
+Waiting on: David (principal), for Q2 only. U1, U2, U3 and U5 proceed without it.
 
-Review due: 2026-10-05 — see Review. The delivery criteria are registered below and are not yet
-assessable, because no ratified delivery exists. The benefit claims in `CONTEXT.md` are
-unobserved and need a real site.
+Review due: 2026-10-05 — see Review. A1–A5, A8 and A9 become assessable when U1 returns; A6 and
+A7 at U2 and U3; B1–B3 need a real site and remain unobserved.
 
-Authority: David retains **spending, outbound messages, external agreements and the release word
-for publication**. Revision 1's grant covered the `Run` increment that produced the code now in
-the tree; this revision supersedes that grant with the one requested in Act. Nothing outside the
-requested grant is authorised, and no ratification exists until David gives it.
+Authority: David ratified the plan and **granted U1–U5** on 2026-09-21. He retains **spending,
+outbound messages, external agreements and the release word for publication**. The grant's
+includes, excludes and stop condition are written out in Act; nothing outside them is authorised.
 
 | Stage | began_at | registered_at / exact basis revision | finished_at |
 | --- | --- | --- | --- |
 | Frame and Decide (Run, revision 1) | 2026-09-21T11:49:00-06:00 | 2026-09-21T11:52:00-06:00 — revision 1 | 2026-09-21T11:52:00-06:00 |
-| Frame and Decide (Plan, revision 2) | 2026-09-21T12:14:00-06:00 | 2026-09-21T12:44:00-06:00 — **this revision** | 2026-09-21T12:44:00-06:00 |
-| Act | pending — waits on ratification | pending | pending |
+| Frame and Decide (Plan, revision 2) | 2026-09-21T12:14:00-06:00 | 2026-09-21T12:44:00-06:00 — revision 2 | 2026-09-21T12:44:00-06:00 |
+| Selection | — | 2026-09-21T13:05:00-06:00 — revision 2, alternative A, ratified by David | 2026-09-21T13:05:00-06:00 |
+| Act — U1 | 2026-09-21T13:05:00-06:00 | 2026-09-21T13:05:00-06:00 — **this revision**, U1 pickup plan | pending |
+| Act — U2, U3, U5 | pending — each registers its own pickup plan at its own pickup | pending | pending |
+| Act — U4 | blocked on Q2 | pending | pending |
 | Review | pending | 2026-09-21T12:44:00-06:00 — revision 2, Review criteria | pending |
 
 ## Frame and Decide
@@ -184,17 +185,85 @@ an error in it is the one failure that would matter beyond this project.
 
 ### Selection
 
-`pending`. `selected_at` not reached. Decider: David. Basis revision: this revision (2). Moss has
-recommended and requests the grant in Act; no alternative is selected and no unit may start until
-David ratifies.
+`selected_at` 2026-09-21T13:05:00-06:00. Decider: **David**. Basis revision: **2** (the Statement
+of Work), ratified in a direct instruction of 2026-09-21. The selection is **alternative A — full
+scope, with U1 re-deriving the existing package against the registered facts contract and
+deleting whatever it cannot justify.** The 2,592 lines in the tree are a proposal, not a
+foundation, and a U1 that concludes most of the package should go is a successful U1.
+
+Two of the open questions were answered in the same instruction and are now part of the basis:
+
+- **Q3 — answered yes.** `--plan` must accept older `plan_version` values and ignore keys it does
+  not understand. A consumer that rejects an unfamiliar key breaks the producer every time the
+  format grows. `siteplan` is finalising the format and expects `plan_version` to be required and
+  everything else optional.
+- **Q5 — answered no.** A missing `llms.txt` must **not** gate. Basis: Ahrefs analysed 137,000
+  sites and found 97% of `llms.txt` files received no requests at all
+  ([Search Engine Journal](https://www.searchenginejournal.com/97-of-llms-txt-files-got-no-requests-ahrefs-data-shows/579478/),
+  [Ahrefs](https://ahrefs.com/blog/llmstxt-study/)). The finding stays a non-gating note, and the
+  reason is recorded in the output rather than only here. This is a `judgment`-basis decision:
+  the study is about one crawler population at one time, and it is cited so a reader can discount
+  it.
+- **Q4 — answered: sub-records where the admission test is met, this record otherwise.** U1's
+  outcome meets it, so U1 files one.
+- **Q2 — still open, and it is the principal's.** U4 waits.
+- **Q6 — answered yes.** `AGENTS.md`'s placeholder standing constraints are to be replaced with
+  this project's own. That is U1 work and is inside the grant as an amendment to the process
+  document, not a new choice.
+
+**The grant.** David granted **U1–U5**. Included: the units in the order below; the power to
+amend or delete unratified code that fails a registered criterion; to write and run tests; to
+write `README.md`, `docs/DESIGN.md`, `scripts/check-project.sh` and the standing constraints in
+`AGENTS.md`; and to commit locally in coherent commits. Excluded: any push, publish, deploy or
+spend; any new dependency; any network request other than the single live run U4 requires, to a
+domain the principal names; any editing of another project's repository; any contact with another
+project's owner without his word. Stop condition: U1, U2, U3 and U5 delivered with this record
+amended, or a material finding that changes the frame, the comparison or the selection — in which
+case the unit stops and returns to David. **U4 is granted but blocked on Q2** and must not run
+until he names a project and its `build/`.
 
 ### Decision index
 
 | Record | Owner | State | Depends on |
 | --- | --- | --- | --- |
-| This record — frame, alternatives, units U1–U5, grant request | Moss | open, submitted | David's ratification |
-| [`docs/DESIGN.md`](docs/DESIGN.md) — D1–D10, the technical choices and their measured thresholds | Moss | written before this plan, not ratified as design | This revision's alternatives; its contents are inputs to U1, not decisions this plan adopts |
-| `docs/records/` — subordinate decisions | — | empty; no sub-record filed | Open question Q4 |
+| This record — frame, alternatives, selection, grant, units U1–U5 | Moss | open, active — U1 picked up | David's ratification, given 2026-09-21 |
+| `docs/records/` — U1's reconciliation of the existing package | Moss | to be filed at U1's return; meets the admission test under Q4 | U1 |
+| [`docs/DESIGN.md`](docs/DESIGN.md) — D1–D10, the technical choices and their measured thresholds | Moss | written before this plan, revised in place | U1's reconciliation decides which of D1–D10 survive |
+
+### U1 pickup plan
+
+Registered before U1 begins, as the skill requires: the first unit's pickup plan at planning time,
+each later unit's at its own pickup.
+
+**How U1 will be carried out.** Not by reading the code and agreeing with it. The route is
+**independent re-derivation**:
+
+1. Build the facts contract from the principal's specification and `CONTEXT.md` — the nine
+   per-page facts and the site-wide findings list — as a checklist with no reference to the
+   existing modules.
+2. For each item, name the fixture page that must produce it and the assertion that proves it. An
+   item with no fixture, or with a fixture that cannot actually produce it, fails the contract.
+3. Compute what the fixtures *should* yield, by reading the fixture files directly, and compare
+   that against what the tool reports. This is the audit: it tests the package against the
+   fixtures rather than against its own tests.
+4. For each module, decide **kept**, **amended** or **deleted**, with the reason, and record the
+   counts. Dead configuration, unreachable branches and code that no criterion needs are deleted
+   rather than carried.
+5. Fill in `scripts/check-project.sh` with the real checks — byte-compile the package and run the
+   suite — so `make ci` can fail on a real defect again.
+6. Apply the three answers that bear on U1: Q5's non-gating `llms.txt` note (already true in the
+   tree, now with the reason and the source in the output), Q6's standing constraints in
+   `AGENTS.md`, and the `docs/records/` sub-record for the outcome.
+
+**Acceptance criteria for U1** (from Review): A1, A2, A3, A4, A5, A8, A9. A8 now also requires
+`scripts/check-project.sh` to contain real checks rather than the stub — a green check that
+establishes nothing is worse than no check, and the propagated stub now fails on purpose so
+`make ci` cannot pass while tests fail.
+
+**Files U1 expects to touch:** `scripts/check-project.sh`, `sitewalk/findings.py` (the `llms.txt`
+note's reason and source), `AGENTS.md` (standing constraints), `docs/records/` (the U1 record),
+any module the reconciliation amends or deletes, and its tests. Anything beyond that list is
+recorded as a deviation before it is done.
 
 ## Act
 
@@ -329,6 +398,19 @@ registered and pending.
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 3, 2026-09-21T13:05:00-06:00. **David ratified the plan: alternative A is selected
+and U1–U5 are granted.** Source: the principal's direct instruction of 2026-09-21, against basis
+revision 2. Reason: a planning run stops at the grant request and resumes only on ratification;
+the ratification arrived, so this revision records the selection, the decider, the basis
+revision, the grant's includes, excludes and stop condition, and U1's pickup plan, and returns the
+mode to `Run`. What changed: `Decision` moved from `pending` to `selected`; `work_status` from
+`submitted` to `active`; *Selection*, the grant, the pickup plan and the decision index were
+added; Q3, Q4, Q5 and Q6 were answered and Q2 confirmed still open, with U4 recorded as granted
+but blocked. What is preserved: revision 2's frame, objectives, conditions, alternatives and
+review criteria, and revision 1's mode and reason — the sequence is kept rather than overwritten.
+Affects: U1, now picked up; U2, U3 and U5, granted and not yet picked up; U4, blocked on Q2. No
+code was written for this revision; it registers the basis for the code that follows.
 
 Revision 2, 2026-09-21T12:44:00-06:00. **Mode changed from `Run` to `Plan`, on the principal's
 direct instruction of 2026-09-21.** Source: that instruction, plus the installed Perspicuity skill

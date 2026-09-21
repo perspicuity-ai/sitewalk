@@ -87,27 +87,56 @@ class FakeResponse:
         return list(self._headers)
 
 
+def route_key(url: str) -> str:
+    """The lookup key for a route: ``scheme://host`` plus the path, without a trailing slash.
+
+    The scheme and host are kept because ``http://example.com/`` and ``https://example.com/``
+    are different requests that a host-only key would confuse -- which is exactly the confusion
+    an http-to-https redirect test exists to catch.
+    """
+    from urllib.parse import urlsplit
+
+    if "://" not in url:
+        return url.rstrip("/") or "/"
+    parts = urlsplit(url)
+    scheme = (parts.scheme or "").lower()
+    host = (parts.hostname or "").lower()
+    port = parts.port
+    netloc = host if port is None else f"{host}:{port}"
+    return f"{scheme}://{netloc}{(parts.path or '/').rstrip('/') or '/'}"
+
+
 @dataclass
 class FakeConnection:
     """A connection that answers from a route table and records what was asked for.
 
     ``sock`` is the attribute ``guard.peer_is_public`` reads, so it is named that here too.
+    ``scheme`` and ``netloc`` are what the connection was opened to, which is what makes a
+    request line into a routable key.
     """
 
     routes: dict
     sock: FakeSocket | None = None
     requests: list[str] = field(default_factory=list)
     closed: bool = False
+    scheme: str = "https"
+    netloc: str = "example.com"
 
     def request(self, method: str, path: str, headers: dict | None = None) -> None:
         self.requests.append(path)
 
+    @property
+    def key(self) -> str:
+        path = self.requests[-1] if self.requests else "/"
+        return route_key(f"{self.scheme}://{self.netloc}{path}")
+
     def getresponse(self) -> FakeResponse:
-        path = self.requests[-1]
-        # An HTTP request line carries the path without a trailing slash, so ``/about`` and
-        # ``/about/`` are the same request. The route table is keyed the way the crawler names
-        # URLs, so the lookup strips it.
-        entry = self.routes.get(path.rstrip("/") or "/")
+        path = self.requests[-1] if self.requests else "/"
+        entry = self.routes.get(self.key)
+        if entry is None:
+            # Fall back to a path-only key, so a test that does not care about the scheme can
+            # keep writing ``http.add("/about/", ...)``.
+            entry = self.routes.get(route_key(path))
         if entry is None:
             return FakeResponse(404, b"", {"content-type": "text/html"})
         if callable(entry):
@@ -133,25 +162,37 @@ class FakeHTTP:
     routes: dict
     peer_host: str | None = None
     connections: list[FakeConnection] = field(default_factory=list)
+    #: Every (host, port) a connection was opened to, so a test can tell 443 from 8443.
+    endpoints: list[tuple[str, int]] = field(default_factory=list)
 
     def connector(self, scheme: str, host: str, port: int, timeout: float) -> FakeConnection:
         reached = self.peer_host or "93.184.216.34"
-        connection = FakeConnection(routes=self.routes, sock=FakeSocket((reached, port)))
+        netloc = host if port in (80, 443) else f"{host}:{port}"
+        connection = FakeConnection(
+            routes=self.routes,
+            sock=FakeSocket((reached, port)),
+            scheme=scheme,
+            netloc=netloc,
+        )
         self.connections.append(connection)
+        self.endpoints.append((host, port))
         return connection
+
+    def _store(self, path: str, entry) -> None:
+        """Register a route under its full key and under its path, so either lookup finds it."""
+        self.routes[route_key(path)] = entry
+        if "://" in path:
+            path_only = "/" + path.split("://", 1)[1].split("/", 1)[-1] if "/" in path.split("://", 1)[1] else "/"
+            self.routes[route_key(path_only)] = entry
 
     def add(self, path: str, body: str | bytes, content_type: str = "text/html", status: int = 200):
         if isinstance(body, str):
             body = body.encode("utf-8")
-        self.routes[path.rstrip("/") or "/"] = (status, body, {"content-type": content_type})
+        self._store(path, (status, body, {"content-type": content_type}))
         return self
 
     def redirect(self, path: str, location: str, status: int = 301):
-        self.routes[path.rstrip("/") or "/"] = (
-            status,
-            b"",
-            {"location": location, "content-type": "text/html"},
-        )
+        self._store(path, (status, b"", {"location": location, "content-type": "text/html"}))
         return self
 
     @property

@@ -17,7 +17,7 @@ from urllib.parse import unquote, urlsplit
 from . import fetch, guard
 from .facts import MAX_BODY_CHARS, Page
 from .pages import content_type_of
-from .urls import SURFACE_PATHS, normalise, origin_of, relative_path
+from .urls import normalise
 
 
 class PageSource(Protocol):

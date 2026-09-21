@@ -13,9 +13,9 @@ from pathlib import Path
 
 from . import fetch, findings, guard, plan as plan_module, report as report_module
 from .crawl import crawl
-from .errors import GuardError, PlanError
+from .errors import GuardError
 from .sources import FileSource, LiveSource
-from .urls import SURFACE_PATHS, origin_of
+from .urls import origin_of
 
 PROGRAM = "sitewalk"
 VERSION = fetch.VERSION
@@ -142,7 +142,9 @@ def main(argv: list[str] | None = None) -> int:
             )
     else:
         try:
-            scheme, host, port, _path = guard.parse_target(args.url)
+            # Called for its validation: the guard refuses a scheme or port this tool will not
+            # fetch, and the message it raises is what the user is shown.
+            guard.parse_target(args.url)
         except GuardError as exc:
             print(f"{PROGRAM}: {exc}", file=sys.stderr)
             return 2

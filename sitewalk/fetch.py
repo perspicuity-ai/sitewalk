@@ -21,7 +21,7 @@ from . import guard
 from .errors import FetchError, GuardError
 from .facts import MAX_BODY_CHARS, Page
 from .pages import content_type_of
-from .urls import origin_of
+from .urls import stays_on_site
 
 VERSION = "0.1.0"
 PROJECT_URL = "https://github.com/perspicuity-ai/sitewalk"
@@ -177,7 +177,7 @@ def fetch(
                 error=f"stopped after {max_redirects} redirects",
                 redirect_to=target,
             )
-        if allowed_origin and origin_of(target) != origin_of(allowed_origin):
+        if allowed_origin and not stays_on_site(target, allowed_origin):
             # Following it would fetch a host the user did not submit. Refused, and said so.
             return Page(
                 url=url,

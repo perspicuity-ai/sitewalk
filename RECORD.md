@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 4
+revision: 5
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-21T14:10:00-06:00"
+updated_at: "2026-09-21T14:45:00-06:00"
 record_status: open
 work_status: active
 ---
@@ -335,6 +335,33 @@ names a project. U4 and U3 can run in either order once U2 is done; the requeste
 gate's real-world value (U4) before the interface to a project that is itself unbuilt (U3),
 because U4 is what tells us whether O1 is real.
 
+### U2 pickup plan
+
+Registered before U2 begins. U2 is the guard and the offline testability of the live path; the
+injection half was completed inside U1's grant, because U1's own criterion A8 could not be met
+with a red `make ci` — that deviation is recorded in U1's sub-record and in the commit, and U2
+owns the guard itself.
+
+**How U2 will be carried out:**
+
+1. **Re-derive the guard's rule set** from `agent-eligibility/eligibility/fetch.py` and the
+   principal's specification, as a list of rules with no reference to the ported module.
+2. **Adversarially test each rule through `fetch.fetch`**, not only through `guard`'s functions.
+   A rule that is implemented but not reached is not a rule, and the existing suite already has
+   one case of that shape: the peer check after connecting.
+3. **Try to defeat it.** Hostile inputs to attempt: a public name that resolves to a private
+   address among several answers; a literal metadata address; an IPv4-mapped private address; a
+   redirect chain that ends off-origin; a redirect to a literal private address; a name with
+   mixed public and private answers; a URL with credentials or an unusual port spelling;
+   `0.0.0.0`; and a peer address that differs from the resolved one.
+4. **Record anything that cannot be defended** rather than widening the rule set to cover it.
+5. Register U3's pickup plan before starting U3.
+
+**Acceptance criteria for U2:** A7 in full, plus A9 and A8 staying green.
+
+**Files U2 expects to touch:** `sitewalk/guard.py`, `sitewalk/fetch.py`, `tests/test_guard.py`,
+`tests/fakes.py`, and this record. Anything else is recorded as a deviation before it is done.
+
 ## Out of scope
 
 | Not in this plan | Reason |
@@ -392,12 +419,18 @@ registered and pending.
 | Criterion | Evidence source | Owner, window or trigger | Finding | Response |
 | --- | --- | --- | --- | --- |
 | A1–A5, A8, A9 (the offline gate) | The committed revision, the two independent derivations, `make ci` | Moss, at U1 delivery, 2026-09-21 | **Met, with the limits below.** Nine of nine per-page facts and twelve of twelve site-wide findings agree with computations made without importing the tool's parser; `--dir` runs inside a harness where any socket use raises; `make ci` exits 0 and exits 2 on each of three injected defects; 244 tests pass offline | Accepted by Moss as self-check only — see the next row. U1's sub-record carries the detail |
-| A7 (the guard) | `tests/test_guard.py`, injected fakes | Moss, at U2 delivery | Pending — U2 not started | Pending |
+| A7 (the guard) | `tests/test_guard.py` and `tests/test_guard_adversarial.py`, injected fakes, no network | Moss, at U2 delivery, 2026-09-21 | **Met, with one defect found and fixed.** Every rule refuses what it must and names the address it refused, through `fetch.fetch` rather than through `guard` alone. The adversarial pass found that an `http`→`https` upgrade redirect — the commonest redirect on the web — was refused as off-origin, which would have reported a plain-HTTP site as unreachable; the rule is now a same-site check that allows the upgrade and refuses downgrades, other hosts, subdomains and other ports | Accepted by Moss as self-check only. The upgrade defect is the evidence that the adversarial pass was worth running, and it is also the reason an independent assessor is still wanted |
 | A6 (the plan check) | CLI tests | Moss, at U3 delivery | Pending — U3 not started | Pending |
-| Independent assessment of U1–U3 by an assessor who did not write them | A named assessor's return against A1–A9 | David to grant; not before delivery | **Not established for U1.** Moss wrote the package and the reconciliation, so A1–A5, A8 and A9 are a self-check. The two defects U1 found were both found by running code against injected breakage rather than by review, which is evidence that the checks work, not that the design is right | Requested in the return to the principal: name an assessor, or accept the self-check with its stated limit |
+| Independent assessment of U1–U3 by an assessor who did not write them | A named assessor's return against A1–A9 | David to grant; not before delivery | **Not established for U1 or U2.** Moss wrote the package and the reconciliation, so A1–A5, A8 and A9 are a self-check. The two defects U1 found were both found by running code against injected breakage rather than by review, which is evidence that the checks work, not that the design is right | Requested in the return to the principal: name an assessor, or accept the self-check with its stated limit |
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 5, 2026-09-21T14:45:00-06:00. **U2 delivered and assessed against A7.** Source: U2's
+committed evidence and the adversarial suite. Reason: the skill requires each planned result to be
+marked delivered, blocked or stopped before a stop. What changed: the Review table carries U2's
+finding, including the defect the adversarial pass found. What is preserved: A7's text as
+registered. Affects: U2, delivered; U3 and U5 remain.
 
 Revision 4, 2026-09-21T14:10:00-06:00. **U1 delivered and assessed against A1–A5, A8 and A9.**
 Source: U1's committed evidence and

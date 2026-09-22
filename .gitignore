@@ -23,3 +23,6 @@ venv/
 # OS and editors
 .DS_Store
 *.swp
+
+# U4 run artifacts (scratch, not part of the delivery)
+.u4/

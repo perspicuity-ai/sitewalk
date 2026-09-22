@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 28
+revision: 29
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-22T05:30:00-06:00"
+updated_at: "2026-09-22T06:00:00-06:00"
 record_status: open
 work_status: active
 ---
@@ -44,15 +44,14 @@ Outcome: the tool is built and green on its own fixtures. **Nothing has been obs
 real built site or a real live site**, which is what U4 is for, and that is the honest boundary on
 every claim in this record.
 
-Next: Moss — **U4 is the only outstanding unit** and it is blocked. Register its pickup plan when the
-answer to Q2 arrives, and do not start it before then.
+Next: Moss — carry out U4's registered pickup plan against both targets, read-only, and report what
+the runs show that the fixtures could not.
 Further pending: David, to answer Q2 by naming a project whose built directory U4 may run against.
 
-Dependency: **U4 is blocked on open question Q2** — the principal has not named which project's
-`build/` may be tested against, and no `build/` directory exists in this workspace. Nothing else
-blocks anything; both Finch assessments and the principal's verification have returned.
+Dependency: Nothing blocks U4. Both targets are named and authorised; neither repository is
+modified by the run.
 
-Waiting on: David (principal), for Q2 only.
+Waiting on: nothing. U4 runs now.
 
 Review due: 2026-10-05. A1–A9 are assessed, by Moss as self-check and by Finch independently for
 U1 and for U6–U9. **B1–B3 are unobserved and need a real site**, which is U4; they are the only
@@ -343,8 +342,7 @@ David's; authority to treat the existing code as ratified, which this plan's U1 
 | **U1** (delivered) | The offline gate: `--dir` mode, discovery, per-page facts, site-wide findings, the text and JSON reports, `--strict`, and a real `scripts/check-project.sh` — verified against this plan rather than assumed from the tree | The fixtures; the criteria in Review; `CONTEXT.md`'s finding list. Depends on nothing outside this repository | Moss, this session if ratified, otherwise the next | Each per-page fact and each site-wide finding in A1–A3 is re-derived from a named fixture and a named test; no module remains that cannot be traced to a criterion; **the two CLI failures are resolved or the failing module is deleted**, the suite passes, and `make ci` exits 0; `make records` stays clean | 2–3 focus sessions. Uncertainty **medium**: the code exists, so this is verification and repair, but the parser bug and the fixture that lied both showed that "it exists and passes" is not evidence. If the facts contract turns out to be met mainly by post-hoc tests, this estimate doubles and alternative A collapses toward B |
 | **U2** (delivered) | The address guard, ported and tested, and the live source's network dependencies injectable so the command line can be exercised with no network | [`agent-eligibility/eligibility/fetch.py`](../agent-eligibility/eligibility/fetch.py), read-only; the existing guard tests. Depends on U1 for the test harness | Moss, after U1 | Schemes other than http/https, ports other than the scheme default, and any host resolving to a private, loopback, link-local, multicast, reserved, unspecified or metadata address are refused, **naming the rule**; the connected peer is re-checked after connecting; a literal address is refused without consulting a resolver; every redirect hop is re-validated; `--url` runs end to end with no network; the two CLI failures are gone and the suite passes with the network unplugged | 0.5–1 focus session. Uncertainty **low**: the rule set is fixed by a tested source, and the injection point is diagnosed |
 | **U3** (delivered) | `--plan site.json`: `required_surfaces` and the home page's `identity.schema_types` enforced, unknown keys ignored with a reason, an unreadable plan exiting non-zero | The `siteplan` format, read-only. Depends on U1; independent of U2 | Moss, after U2 | The example plan in `siteplan`'s `CONTEXT.md` is met by the conforming fixture and unmet by the bare one; `offering`, `url_rules`, `crawler_stance`, `pages` and `identity.fields` are named in the output as **not checked**, with the reason; a malformed or missing plan exits 2 and never 0 | 1 focus session. Uncertainty **low** for the two enforced keys, **medium** for the format staying still while `siteplan` is itself unbuilt (Q3) |
-| **U4** (blocked) | One documented run against a real built directory from another project, and the gate's verdict on it | A `build/` directory and its owner's permission, both named by David. **BLOCKED on Q2 — not started** | Moss, with the principal | The run completes with no network access; its findings are reviewed by the project that owns the build; a real regression, if the build has one, is named; the false-positive judgement is recorded rather than assumed | 0.5 session plus the other project's time. Uncertainty **high**: no `build/` directory exists anywhere in this workspace today, so the whole unit waits on a person |
-| **U5** (delivered) | `README.md` (what it does, how to run it, what it does not do) and the design record | U1–U3 as built. Depends on U1 for the package, U3 for the plan section | Moss, alongside U1 and finished with U3 | A reader with no context can install and run both modes from the README alone; "what it does not do" states the no-JavaScript limit, the origin bound, the absence of any ranking, citation or recommendation claim, and that `--dir` makes no network request; `docs/DESIGN.md` carries each threshold with its rejected alternatives, or says plainly that it is judgement | 1 focus session. Uncertainty **low** |
+| **U4** (granted, pickup plan registered — **scope widened**) | **Two documented runs covering both sources: a live crawl of `findmynextbite.food`, then the offline gate against `agent-eligibility`'s real build.** Originally one `build/` directory; widened by the principal on 2026-09-22 because the site he named has no build and the live path has never met a real site | Both targets named and authorised by David, 2026-09-22. Read-only: neither repository is modified, and no report is published | Moss, 2026-09-22 | Six criteria in the pickup plan: both runs complete and neither exits 2; the live run's pages, statuses and surfaces are checked against the site's own `robots.txt` and `sitemap.xml` fetched independently; the offline run's findings are checked against the build's files; every difference from the fixtures is named with whether it was a tool defect, a site choice, or something the fixtures could not represent; the false-positive judgement on the real build is recorded rather than assumed; and `git status` in each target shows nothing written | 1 session for both runs plus the checking. Uncertainty **medium**: the runs are mechanical, but this is the first contact with a real site and the first real build, so what they expose is unknown by construction |
 | **U6** (delivered) | **Make the robots.txt skip structural in the report.** The report must state, where a reader cannot miss it, how many paths were excluded and why | `sitewalk/crawl.py` must keep the matched rule; `sitewalk/report.py` must surface the count; `tests/` must prove each | Moss, after Finch's assessment returns and under a fresh pickup plan | Four criteria, all currently **unmet**: (1) the total count appears in the report header, not only in Notes; (2) the count appears in `limits` in the JSON as `paths_skipped_robots`; (3) each skip names the path **and quotes the matched rule** (`Disallow: /private/`), which today is discarded by `sitemap.parse_robots`; (4) a test asserts all three, so removing any of them fails the suite | 0.5 focus session. Uncertainty **low**: the skip list already exists; this is surfacing it and keeping the rule |
 | **U7** (delivered) | **Make the plan verdict honest about what it knows: a version gate, and unverified surfaces that are never reported as absent.** Under the format's rule 4, keys grow but versions announce: an unknown key is additive growth a consumer may carry and name, while an unknown version means a key's meaning may have moved, so the verdict must be conditional in default mode and an error finding under `--strict` | `siteplan/docs/PLAN-FORMAT.md` at `fe8433b` (frozen format 1), read-only; the two version cases already in `siteplan/docs/fixtures/plan-conformance.json` | Moss, after U6 | Five criteria: (1) `plan_version` 1 reads clean, unqualified; (2) an older version reads normally, unqualified; (3) an unknown or newer version is met-with-a-condition in default mode and a **`conditional` finding exiting non-zero** under `--strict` (this criterion said *error* until 2026-09-22, which contradicted design A and the code); (4) an absent or mistyped `plan_version` is an error finding under `--strict` too — an unsupported verdict rather than a conditional one — with a message distinct from the unknown-version case; (5) a required surface the consumer has **no check for** is reported as *unverified*, never as absent, as a `conditional` finding: default runs disclose it and exit 0, and `--strict` refuses to certify the plan and exits non-zero. The severity is defined in the report's own documentation and reaches `finding_counts` in the JSON. Tests load the seven **valid** plans from the conformance fixture and assert each is met, and assert that an unchecked surface produces no `plan_surface_missing` finding | 1 focus session. Uncertainty **low** |
 | **U8** (delivered) | **Check the two surfaces this consumer could not check: `json-ld` and `rss.xml`.** The format's vocabulary is closed at five and describes what a plan may require, not what one tool looks for, so the gap closes on this side | `siteplan/docs/PLAN-FORMAT.md` at `fe8433b`, read-only. Cost measured 2026-09-21 | Moss, after U7 | Four criteria: (1) a plan requiring `rss.xml` is met when `/rss.xml` answers 2xx and unmet when it does not; (2) a plan requiring `json-ld` is met when any crawled page carries a JSON-LD `@type`; (3) **four states are distinguishable in the JSON, without reading a message string**: fetched-and-present, fetched-and-absent, derived-and-not-fetched, and not-checked-at-all; and (4) **the disclosure stays**: a surface this consumer still cannot check is named, is state *not checked*, stays `conditional`, and still gates under `--strict`, so a sixth surface added later reopens the same gap under the same rule. The vocabulary stays at five | 0.5–1 focus session. Uncertainty **low**, and the ruling is conditional on the cost turning out as measured: the two are one request and one already-held fact. Raised from 0.5 by the four-state requirement |
@@ -909,6 +907,61 @@ record's scope, so it is **not** made here: it is registered as proposal P1 unde
 grant, to be applied when the principal authorises a change to `AGENTS.md` or when U6 runs under
 the grant that already includes that file.
 
+### U4 pickup plan
+
+Registered before U4 begins, on the principal's authorisation of 2026-09-22.
+
+#### Scope change, recorded as one
+
+U4 was scoped as "one documented run against a real built directory from another project". It is
+now **two targets, in order, covering both sources**, because the site the principal named has no
+`build/` directory: `findmynextbite.food` is a live site, so the natural reading is a live run, and
+that is the more valuable of the two — **no live `--url` run has ever happened in this project**.
+Everything known about the online path comes from an injected fake connection, and the fixtures
+cannot show what a real site does. The second target keeps the original purpose: `--dir` against a
+real build nobody wrote for the tests.
+
+| # | Target | Mode | What it can establish |
+| --- | --- | --- | --- |
+| 1 | `findmynextbite.food` | `--url`, live | First contact with a real site: the guard, the discovery path, real robots.txt and sitemap, real content types, real redirects. This is the only way B1–B3's precondition is ever met |
+| 2 | `agent-eligibility`'s build | `--dir`, offline | The deploy gate against a real build. `ELIGIBILITY_SITE_URL=https://agents.perspicuity.ai python3 scripts/build_site.py` produces about 23 files |
+
+**Bounds.** Read-only. Fetch, read and report; **neither repository is modified**, and no tracked
+file in `agent-eligibility` is touched. A read-only crawl of a public site needs no coordination
+claim, and none is taken. No report is published: publication is the principal's retained word.
+
+#### How it will be carried out
+
+1. **Target 1 live**, with its defaults recorded: `--max-pages`, `--delay`, `--timeout`, and the
+   user agent the site sees. Network use is the run itself and nothing else.
+2. **Read what it reports against what the site actually serves**, including `/robots.txt` and
+   `/sitemap.xml` fetched separately, so the report can be checked rather than believed.
+3. **Target 2**: run the producer's own build command, then `--dir` against the result, and read the
+   findings against the build's files the same way.
+4. **Record what the fixtures could not have shown** — every place a real site behaves differently
+   from the two fixtures written by the same hand as the code.
+5. **Report the gate's false-positive rate** on a build nobody wrote for the tests: which findings
+   are real, which are the tool being wrong, and which are the tool being right about something
+   nobody cares about.
+
+#### Acceptance criteria
+
+1. Both runs complete; the live one exits 0 or 1 by its findings, not 2.
+2. The live run's pages, statuses and surfaces are checked against the site's own `robots.txt` and
+   `sitemap.xml`, fetched independently.
+3. The offline run's findings are checked against the build's files.
+4. Every difference from the fixtures is named, with whether it was a tool defect, a site choice, or
+   something the fixtures simply could not represent.
+5. The false-positive judgement on the real build is recorded, not assumed.
+6. **Nothing is written into either target repository**, verified with `git status` in each.
+
+**What this still does not establish.** That the tool works in general. It establishes that it
+worked on two named targets on one day. B1–B3 remain benefit claims about other projects' release
+paths and cannot be observed from here.
+
+**Files U4 expects to touch:** this record only, plus whatever defects the runs expose — each of
+which registers its own unit rather than being fixed inside U4.
+
 ## Out of scope
 
 | Not in this plan | Reason |
@@ -978,6 +1031,17 @@ registered and pending.
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 29, 2026-09-22T06:00:00-06:00. **U4 is unblocked with a widened scope, and its pickup plan
+is registered.** Source: the principal's authorisation of 2026-09-22 naming two targets. Reason: the
+site he named has no `build/` directory, so the run is live — and the live path has never been
+exercised against a real site, which makes it the more valuable of the two; the second target keeps
+the original `--dir` purpose against a real build. **This is a scope change and is recorded as one**:
+U4 was "one documented `build/` from another project" and is now two targets covering both sources.
+What changed: U4's row and pickup plan; the plan's bounds (read-only, neither repository modified, no
+publication) and its six acceptance criteria. What is preserved: every earlier revision, and the
+honest boundary that two runs on two named targets establish nothing general. Affects: U4, now
+picked up.
 
 Revision 28, 2026-09-22T05:30:00-06:00. **U10 is withdrawn; the clause that survived it is delivered
 as U12; G1 is resolved.** Source: the principal's relay of Heron's ruling on 2026-09-22, and

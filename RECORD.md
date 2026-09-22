@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 24
+revision: 25
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-22T03:00:00-06:00"
+updated_at: "2026-09-22T03:40:00-06:00"
 record_status: open
 work_status: active
 ---
@@ -349,6 +349,8 @@ David's; authority to treat the existing code as ratified, which this plan's U1 
 | **U7** (delivered) | **Make the plan verdict honest about what it knows: a version gate, and unverified surfaces that are never reported as absent.** Under the format's rule 4, keys grow but versions announce: an unknown key is additive growth a consumer may carry and name, while an unknown version means a key's meaning may have moved, so the verdict must be conditional in default mode and an error finding under `--strict` | `siteplan/docs/PLAN-FORMAT.md` at `fe8433b` (frozen format 1), read-only; the two version cases already in `siteplan/docs/fixtures/plan-conformance.json` | Moss, after U6 | Five criteria: (1) `plan_version` 1 reads clean, unqualified; (2) an older version reads normally, unqualified; (3) an unknown or newer version is met-with-a-condition in default mode and a **`conditional` finding exiting non-zero** under `--strict` (this criterion said *error* until 2026-09-22, which contradicted design A and the code); (4) an absent or mistyped `plan_version` is an error finding under `--strict` too — an unsupported verdict rather than a conditional one — with a message distinct from the unknown-version case; (5) a required surface the consumer has **no check for** is reported as *unverified*, never as absent, as a `conditional` finding: default runs disclose it and exit 0, and `--strict` refuses to certify the plan and exits non-zero. The severity is defined in the report's own documentation and reaches `finding_counts` in the JSON. Tests load the seven **valid** plans from the conformance fixture and assert each is met, and assert that an unchecked surface produces no `plan_surface_missing` finding | 1 focus session. Uncertainty **low** |
 | **U8** (delivered) | **Check the two surfaces this consumer could not check: `json-ld` and `rss.xml`.** The format's vocabulary is closed at five and describes what a plan may require, not what one tool looks for, so the gap closes on this side | `siteplan/docs/PLAN-FORMAT.md` at `fe8433b`, read-only. Cost measured 2026-09-21 | Moss, after U7 | Four criteria: (1) a plan requiring `rss.xml` is met when `/rss.xml` answers 2xx and unmet when it does not; (2) a plan requiring `json-ld` is met when any crawled page carries a JSON-LD `@type`; (3) **four states are distinguishable in the JSON, without reading a message string**: fetched-and-present, fetched-and-absent, derived-and-not-fetched, and not-checked-at-all; and (4) **the disclosure stays**: a surface this consumer still cannot check is named, is state *not checked*, stays `conditional`, and still gates under `--strict`, so a sixth surface added later reopens the same gap under the same rule. The vocabulary stays at five | 0.5–1 focus session. Uncertainty **low**, and the ruling is conditional on the cost turning out as measured: the two are one request and one already-held fact. Raised from 0.5 by the four-state requirement |
 | **U9** (delivered) | **Apply U1's deletion test across the whole package, and fix what it finds.** Finch found two items that fail the very test U1 used to delete six others, so the test was right and was not applied exhaustively | `sitewalk/guard.py`, `sitewalk/errors.py`, `sitewalk/plan.py`, `docs/DESIGN.md`. Independent of U6–U8 except for the plan JSON, which is U8's surface | Moss, after U8 (the `plan` JSON item touches U8's file) | Six criteria: (1) `Address.host`, `Address.port` and `Address.family` are written but read nowhere — **verified by hand, not by a name-level scan** — and are removed; (2) `PlanError` has no reference anywhere and is removed or given a documented use; (3) the deletion test is re-run exhaustively and its **result is recorded, including a nil result**; (4) `plan.identity_schema_types_met: true` while `passed: false` on a malformed plan is fixed, since that is the same overclaim shape as U8's states; (5) DESIGN D6's `app_root_markers` and D1's `read(path)` are corrected to `app_root_element` and `fetch`; (6) each fix answers P1's question with a test that fails on the wrong change | 0.5–1 focus session. Uncertainty **low** |
+| **U10** (granted; **held**) | **`json-ld` means the home page, and the verdict names the page it looked at.** Today this consumer accepts JSON-LD on **any crawled page**, so a site with it only on a deep page passes; the rule Heron has written makes it home-page-only | `siteplan/docs/PLAN-FORMAT.md`, revised by Heron. Resolves **G1** | Moss, **after the principal confirms Heron's answer to the kind-awareness caveat** | Three criteria: (1) `json-ld` is met only when the **home page** carries a `@type`; (2) the finding names the page it looked at, so a reader can tell which page was checked; (3) the tests assert the change on what a machine reads, including a site whose JSON-LD is only on a deep page, which **passes today and must not after** | 0.5 focus session. **Held:** the principal has raised with Heron whether home-page-only is wrong for kinds whose structured data legitimately lives on inner pages — a content site's `Article` markup is on its articles. Either `json-ld` leaves those kinds' surface lists or the rule becomes kind-aware. Discovering that at the first content-site build is the expensive way |
+| **U11** (granted, pickup plan registered) | **The ignored-key disclosure must reach the machine-readable output.** Rule 6 makes the disclosure the *condition* of tolerating an unknown key, and a condition that lives only in prose is not one a machine consumer can rely on | Resolves **G5**. The audit below records what already reaches the JSON and what does not | Moss, now | Four criteria: (1) every key the consumer ignored appears in the machine-readable output as a finding, not only in `notes`; (2) the finding names the key; (3) a test asserts it on the JSON, not on the text report; (4) the audit of every other tolerated case is recorded, including that they already reach the JSON, so a later change that confines one of them to prose fails a test | 0.5 focus session. Uncertainty **low** |
 
 **Order and dependency.** U1 → U2 → U3, with U5 alongside U1 and U4 startable as soon as David
 names a project. U4 and U3 can run in either order once U2 is done; the requested order puts the
@@ -700,6 +702,42 @@ is still named in the output, still `conditional`, and still gates under `--stri
 two checks makes the gate able to certify more, it does not make the disclosure optional. If the
 format adds a sixth surface, the same gap reopens and the same rule applies.
 
+### U11 pickup plan
+
+Registered before U11 begins. U11 is the disclosure rule of the format's rule 6, made structural.
+
+**Why it is a defect and not a polish.** Rule 6 and rule 4 both make the disclosure the *condition*
+of tolerating something: a consumer may carry an unknown key precisely because it names what it did
+not check, "and that disclosure is the condition that makes tolerance permissible — not advice about
+it". This consumer names ignored keys in `report.notes`, which is rendered in the text report and
+serialised as a bare string array. A machine consumer reading `findings` cannot see them, so the
+condition the format relies on is not met for the consumers most likely to act on it.
+
+**The audit of every tolerated case, run before the fix** (2026-09-22), because the principal asked
+whether the same shape appears elsewhere — the four surface states, the version conditions and the
+ignored keys are all "the verdict depends on something the consumer knows or does not know":
+
+| Tolerated case | Reaches the machine-readable output? |
+| --- | --- |
+| Version conditions (unknown, newer, absent, mistyped) | **Yes** — `plan_verdict_conditional` and `plan_invalid` findings, plus `plan.conditions` |
+| Unverified surface | **Yes** — `plan_surface_unverified` finding, plus `plan.required_surfaces_unverified` |
+| Four surface states | **Yes** — `surfaces[name].state`, with `surface_states` declaring the vocabulary |
+| Robots skips | **Yes** — `skipped_robots[]` with the quoted rule, plus `limits.paths_skipped_robots` |
+| Truncated bodies | **Yes** — `pages[].truncated` per page, and a note |
+| Script-rendered pages | **Yes** — `pages[].looks_script_rendered` with the heuristic's own evidence, plus an `info` finding |
+| Sitemap URLs never reached | **Yes** — `findings`, plus `sitemap.never_reached` |
+| Surface not found | **Yes** — a `surface_missing` finding with its state |
+| **Ignored plan keys** | **No.** A `notes` string only. **This is the single gap** |
+
+**The fix.** `check_plan` already collects the ignored keys in a note; it will collect them as data
+as well, and `apply_to_report` will emit them as `info` findings naming each key. Information rather
+than `conditional`, because an ignored key is additive growth the format permits a consumer to carry
+— it does not make the verdict unsupported the way an unknown version does.
+
+**The guard, per the principal's point (4).** Each row of that table gets an assertion on the JSON,
+so a later change that confines any tolerated case to prose fails a test. This is the shape-rule
+applied to the report: the audit is not evidence unless something keeps it true.
+
 ### U9 scoping: the test U1 used, applied to everything
 
 Finch's assessment returned two defects that **fail U1's own deletion test** — the test that removed
@@ -939,6 +977,16 @@ registered and pending.
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 25, 2026-09-22T03:40:00-06:00. **U10 and U11 are registered from the format routing, and
+U11's pickup plan is written.** Source: the principal's grant of 2026-09-22, both arising from this
+record's own G-findings. Reason: G1 and G5 were registered as document defects; Heron has ruled on
+both, and the consumer side of each is this repository's work. What changed: U10 is registered and
+**held** pending the principal's confirmation of whether home-page-only is right for kinds whose
+structured data lives on inner pages; U11 is registered with its pickup plan, including the audit
+of every tolerated case showing that ignored keys are the single one confined to prose. What is
+preserved: G1–G5 as recorded, with G4's correction. Affects: U11 now; U10 when the caveat is
+settled; **U4 retains precedence whenever Q2 is answered**.
 
 Revision 24, 2026-09-22T03:00:00-06:00. **G4 is corrected: duplicates are detectable, and are now
 refused. G3 is re-attributed to the principal's ruling.** Source: the principal's correction of

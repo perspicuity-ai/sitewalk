@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .facts import CONDITIONAL, ERROR, NOT_CHECKED, Finding, SiteReport
+from .facts import CONDITIONAL, ERROR, INFO, NOT_CHECKED, Finding, SiteReport
 from .urls import relative_path
 
 #: Keys the format defines at the top level, and whether this consumer enforces them.
@@ -67,6 +67,10 @@ class PlanCheck:
     #: Which of the enforced keys the plan actually carried, so a sub-check that never ran is
     #: reported as "not run" rather than as met or failed.
     enforced: list[str] = field(default_factory=list)
+    #: Keys this consumer did not understand and therefore did not check. Carried as data because
+    #: the format makes naming them the *condition* of tolerating them (rules 4 and 6), and a
+    #: condition a machine consumer cannot see is not one it can rely on.
+    ignored_keys: list[str] = field(default_factory=list)
     missing_schema_types: list[str] = field(default_factory=list)
     home_json_ld_types: list[str] = field(default_factory=list)
     planned: bool = False
@@ -260,7 +264,10 @@ def check_plan(report: SiteReport, plan: dict[str, Any], path: str = "") -> Plan
 
     for key in plan:
         if key not in KNOWN_KEYS:
-            check.notes.append(f"the plan key {key!r} is not one this consumer knows; it was ignored")
+            # Recorded as data, not as a note. `apply_to_report` turns each into an `info` finding,
+            # which reaches both the text report and the JSON; a note as well would say the same
+            # thing twice in the text report and only once where it matters.
+            check.ignored_keys.append(key)
     for key, why in KNOWN_KEYS.items():
         if key in plan and key in ("offering", "url_rules", "crawler_stance", "pages"):
             check.notes.append(f"{key} — {why}")
@@ -288,6 +295,9 @@ def apply_to_report(check: PlanCheck, report: SiteReport) -> None:
     """Add a plan's verdict to a report's findings, so ``--strict`` can gate on them."""
     report.plan = {
         "path": check.path,
+        # The ignored keys as data, so the disclosure rule 6 depends on is readable without
+        # parsing prose.
+        "ignored_keys": list(check.ignored_keys),
         "plan_version": check.version,
         "site": check.site,
         "kind": check.kind,
@@ -320,6 +330,21 @@ def apply_to_report(check: PlanCheck, report: SiteReport) -> None:
                 severity=ERROR,
                 message=f"the plan requires {name}, which the site does not publish",
                 subject=name,
+            )
+        )
+    for key in check.ignored_keys:
+        # `info`, not `conditional`: an unknown key is additive growth the format permits a
+        # consumer to carry, and naming it is the condition of that permission. It does not make
+        # the verdict unsupported the way an unknown version does.
+        report.findings.append(
+            Finding(
+                kind="plan_key_ignored",
+                severity=INFO,
+                message=(
+                    f"the plan carries the key {key!r}, which this consumer does not know; it was "
+                    "ignored and its requirement, if any, was not checked"
+                ),
+                subject=key,
             )
         )
     for name in check.unverified_surfaces:

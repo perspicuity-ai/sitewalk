@@ -210,13 +210,18 @@ not judge; `crawler_stance` is not observable from pages at all.
 | Input | Behaviour | Why |
 | --- | --- | --- |
 | `plan_version` older, newer or absent | Read, not rejected. The output notes which revision the consumer was built against and says a met result does not mean the whole plan was verified | A consumer that rejects an unfamiliar version breaks the producer every time the format grows. `siteplan` has not confirmed the key is required, so its absence cannot be fatal either |
-| A key this consumer does not know | Ignored, with a note naming it | Same reason, and it is the case that will actually happen |
+| A key this consumer does not know | Ignored, **named as an `info` finding and listed in `plan.ignored_keys`**, so the disclosure reaches the machine-readable output | Same reason, and it is the case that will actually happen. Rule 6 makes naming the condition of the permission, so it cannot live only in prose: a `notes` string is not something a JSON consumer can act on |
 | A known key of the **wrong type** | A problem, reported and gating | Leniency about growth is not leniency about malformation. A consumer that coerces `"schema_types": "Organization"` into a one-item list reports a plan as met when the plan was never well formed |
 | `required_surfaces` as a bare string | Accepted | The meaning is unambiguous, and rejecting it costs a producer a release for nothing. This is the one coercion, and it is opt-in per key |
 | A file that cannot be read, or is not JSON, or is not an object | Exit 2 | A gate that cannot read its own plan must not report a pass |
 
 The strict-type rule was found by testing rather than by reasoning: the first implementation
-coerced a bare string for every list-valued key, so a malformed `identity.schema_types` passed.
+coerced a bare string for every list-valued key, so a malformed `identity.schema_types` passed. And
+the disclosure rule was found the same way: ignored keys were named only in `notes`, which the JSON
+serialises as prose, so the condition the format relies on was unmet for the consumers most likely to
+act on it. Every tolerated case is now asserted **on the JSON** — see
+`tests/test_plan.py::TheDisclosureReachesTheMachineReadableOutput` — so confining one of them to prose
+fails a test.
 
 Rejected: **enforcing everything the format can express.** Three of the keys are not observable
 from the pages this tool reads, so enforcing them would mean reporting checks that were not

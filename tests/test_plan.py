@@ -136,11 +136,14 @@ class IdentityChecks(unittest.TestCase):
 
 
 class Leniency(unittest.TestCase):
-    def test_an_unknown_key_is_ignored_with_a_note(self):
+    def test_an_unknown_key_is_ignored_and_recorded_as_data(self):
+        # Recorded as data rather than as a note: `apply_to_report` turns each into an `info`
+        # finding, which is what reaches the machine-readable output. A note would put the same
+        # sentence in the text report twice and in the JSON's prose array only.
         check = check_plan(
             report_for(), {"plan_version": 1, "required_surfaces": ["robots.txt"], "future_key": {"a": 1}}
         )
-        self.assertTrue(any("future_key" in note for note in check.notes))
+        self.assertEqual(check.ignored_keys, ["future_key"])
         self.assertTrue(check.passed)
 
     def test_the_keys_that_are_not_checked_are_named_with_a_reason(self):
@@ -300,7 +303,7 @@ class Leniency(unittest.TestCase):
         )
         self.assertFalse(check.problems)
         self.assertTrue(check.passed)
-        self.assertTrue(any("invented" in note for note in check.notes))
+        self.assertEqual(check.ignored_keys, ["invented"])
 
     def test_the_full_plan_from_the_siteplan_context_is_met_by_a_conforming_site(self):
         check = check_plan(report_for(), FULL_PLAN)
@@ -645,3 +648,95 @@ class DuplicateKeysAreRefusedNotSilentlyResolved(unittest.TestCase):
 
         text = '{"plan_version": 1, "site": "first.example", "site": "second.example"}'
         self.assertEqual(json.loads(text)["site"], "second.example")
+
+
+class TheDisclosureReachesTheMachineReadableOutput(unittest.TestCase):
+    """U11, and the guard the principal asked for over every tolerated case.
+
+    Rules 4 and 6 make the disclosure the *condition* of tolerating an unknown key: a consumer may
+    carry it precisely because it says what it did not check. A disclosure that lives in the text
+    report is not a condition a machine consumer can rely on, and a machine consumer is the one
+    most likely to act on the verdict.
+
+    Every assertion here reads the JSON. That is the point: the audit that found this gap is not
+    evidence unless something keeps it true, so each tolerated case is asserted on what a machine
+    reads rather than on a message.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        plan = {"plan_version": 99, "required_surfaces": ["robots.txt"], "future_key": {"a": 1}}
+        report = findings.analyse(_crawl(FIXTURES / "bare-site"))
+        apply_to_report(check_plan(report, plan, path="site.json"), report)
+        cls.data = to_dict(report)
+
+    def kinds(self):
+        return {f["kind"]: f for f in self.data["findings"]}
+
+    def test_an_ignored_key_is_a_finding_with_its_name(self):
+        finding = self.kinds().get("plan_key_ignored")
+        self.assertIsNotNone(finding, "the ignored key is not in the findings array")
+        self.assertEqual(finding["severity"], "info")
+        self.assertEqual(finding["subject"], "future_key")
+        self.assertIn("future_key", finding["message"])
+
+    def test_an_ignored_key_is_also_machine_readable_as_data(self):
+        self.assertEqual(self.data["plan"]["ignored_keys"], ["future_key"])
+
+    def test_an_ignored_key_does_not_gate(self):
+        # It is additive growth the format permits carrying, not an unsupported verdict.
+        self.assertNotIn("plan_key_ignored", [k for k, f in self.kinds().items() if f["severity"] == "conditional"])
+        self.assertEqual(self.kinds()["plan_key_ignored"]["severity"], "info")
+
+    def test_the_version_condition_reaches_the_json(self):
+        self.assertIn("plan_verdict_conditional", self.kinds())
+        self.assertTrue(self.data["plan"]["conditions"])
+
+    def test_the_surface_states_reach_the_json(self):
+        for name, surface in self.data["surfaces"].items():
+            with self.subTest(surface=name):
+                self.assertIn(surface["state"], self.data["surface_states"])
+
+    def test_the_robots_skips_reach_the_json(self):
+        report = findings.analyse(dir_crawl())
+        data = to_dict(report)
+        if data["skipped_robots"]:
+            self.assertIn("rule", data["skipped_robots"][0])
+        self.assertIn("paths_skipped_robots", data["limits"])
+
+    def test_a_truncated_page_reaches_the_json(self):
+        for page in self.data["pages"]:
+            self.assertIn("truncated", page)
+
+    def test_a_script_rendered_page_reaches_the_json(self):
+        data = to_dict(findings.analyse(dir_crawl()))
+        shells = [p for p in data["pages"] if p["looks_script_rendered"]]
+        self.assertTrue(shells, "the fixture has a script shell")
+        self.assertIn("script_shell_evidence", shells[0])
+
+    def test_unreached_sitemap_urls_reach_the_json(self):
+        data = to_dict(findings.analyse(dir_crawl()))
+        self.assertTrue(data["sitemap"]["never_reached"] or data["sitemap"]["urls_named"] == 0)
+
+    def test_every_tolerated_case_is_in_the_json_and_not_only_in_notes(self):
+        # The guard, stated once over all of them: a tolerated case that appears only in `notes`
+        # is a disclosure a machine consumer cannot see. `notes` is prose; this asserts the
+        # machine-readable side, so confining any of them to prose fails here.
+        data = self.data
+        machine_readable = (
+            "plan_verdict_conditional" in {f["kind"] for f in data["findings"]}
+            and "ignored_keys" in data["plan"]
+            and all("state" in s for s in data["surfaces"].values())
+            and "paths_skipped_robots" in data["limits"]
+            and all("truncated" in p for p in data["pages"])
+            and all("looks_script_rendered" in p for p in data["pages"])
+        )
+        self.assertTrue(machine_readable, "a tolerated case is confined to the text report")
+
+
+def dir_crawl():
+    from sitewalk.crawl import crawl as run_crawl
+    from sitewalk.sources import FileSource
+
+    source = FileSource(FIXTURES / "example-site")
+    return run_crawl(source, source.origin)

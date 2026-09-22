@@ -93,13 +93,17 @@ The verdict depends on what this tool actually knows:
 | A **newer or unknown** `plan_version` | `met with conditions` — the file may be valid against a specification this tool does not hold, so a key's meaning may have moved | **exits 1** |
 | An **absent or mistyped** `plan_version` | `not met` — the file is malformed, and with no usable version no key can be trusted | **exits 1** |
 | A required surface this tool has **no check for** | `met with conditions` — reported **unverified**, never absent | **exits 1** |
-| An unknown key | ignored, **and named**, so a `met` never hides something that was not checked | not on its own |
+| An unknown key | ignored, **and named as a finding**, so a `met` never hides something that was not checked. Listed in `plan.ignored_keys` and as an `info` finding | not on its own |
 
 This tool checks all five surfaces the format's vocabulary defines — `robots.txt`, `sitemap.xml`,
 `llms.txt` and `rss.xml` by fetching them, and `json-ld` by reading the pages it already has. So no
 plan can ask for something the gate cannot certify today. If the format adds a sixth, the gap
 reopens and the rule still holds: an unverifiable surface is reported *unverified* and gates under
 `--strict` rather than passing silently.
+
+An ignored key is disclosed **where a machine reads it**, not only in prose: the format makes
+naming it the condition of tolerating it, and a condition a JSON consumer cannot see is not one it
+can rely on.
 
 "Not found" and "not checked" are different claims and the output keeps them apart. Each surface
 carries a machine-readable state, so a JSON consumer never has to infer one from a message:

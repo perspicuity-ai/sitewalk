@@ -28,6 +28,11 @@ Read this before trusting a report. The limits are the product, not caveats on i
   operation raise.
 - **It writes nothing to disk and keeps nothing between runs.** Reports go to stdout.
 - **It sends no cookie, uses no account, and stores no credential.**
+- **Its error findings include false positives.** Measured on the first live run against a real
+  site: **4 of 7 errors were the tool's fault**, all from pages reached through a redirect being
+  counted as duplicates of the pages they redirect to. That defect is fixed, but the number is here
+  because a reader should know the tool has been wrong about a real site before trusting any single
+  finding. Read an error as a prompt to check, not as a verdict.
 
 ## Install
 

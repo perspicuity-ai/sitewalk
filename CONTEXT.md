@@ -61,3 +61,25 @@ produces and `sitewalk --plan` consumes.
 - **Fails** if it only ever reports what a sitemap already says, or if nobody runs it twice.
 - **Scope cap:** if the first working version is not usable against a real site within the first
   session, stop and cut the page inventory down rather than adding features.
+
+### What the first real runs showed — observed, not intended
+
+Added 2026-09-22 after U4, the first contact with real targets. These are measurements, not
+restatements of the goals above; the goals are unchanged and the second success condition is still
+unmet.
+
+- **The "only reports what a sitemap already says" failure is answered on the affirmative side.**
+  Against `findmynextbite.food` the crawl reached all 40 URLs the sitemap names **and 10 it does
+  not**, including `/api/discovery` — the endpoint whose invisibility to the original audit is why
+  this project exists — plus `/.well-known/api-catalog` and `/data/listings.json`.
+- **The first real false-positive rate is 4 of 7 live errors, 57%.** Two pages reached through
+  redirects were counted as duplicates of the pages they redirect to. This matters more than a
+  defect count: a gate that emits errors on correct work is a gate that gets switched off, which is
+  the failure `--strict` and the severity split exist to prevent. Fixed as U13, and the mechanism is
+  now asserted on a reproduction of the live shape.
+- **The deploy gate was unusable on a real build until U14.** `agent-eligibility`'s build declares
+  its true origin and the tool judged it against a synthetic one, so every page setting a canonical
+  gated. That is every build a `siteplan` brief produces, since the brief requires a canonical.
+- **B1–B3 remain unobserved.** No project has adopted the tool, so nothing here shows it catching a
+  regression in a release path. A live crawl is evidence about a site, not about a gate stopping a
+  release, and that claim still needs another project.

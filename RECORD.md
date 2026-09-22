@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 34
+revision: 35
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-22T09:15:00-06:00"
+updated_at: "2026-09-22T09:45:00-06:00"
 record_status: open
 work_status: active
 ---
@@ -1102,6 +1102,18 @@ registered and pending.
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 35, 2026-09-22T09:45:00-06:00. **The first real measurements are recorded where a reader
+meets them.** Source: U4's runs and the units they produced, plus the principal's direction that the
+4/7 rate is a headline finding and that `CONTEXT.md`'s sitemap failure condition is now answerable.
+Reason: a false-positive rate that lives only in a record is a rate a user never sees, and the
+principal's instruction was explicit that it belongs before any error a reader trusts. What changed:
+`CONTEXT.md` gains an *observed, not intended* subsection — the sitemap condition answered on the
+affirmative side with the ten uncrawled pages named, the 57% rate and why it matters to the gate's
+survival, the deploy-gate defect, and that **B1–B3 remain unobserved**; `README.md`'s "what it does
+not do" gains the false-positive rate, because that list is where a reader forms their expectations.
+What is preserved: the principal's goals verbatim — the addition is marked as measurement and the
+second success condition is still unmet. Affects: the reader-facing documents only.
 
 Revision 34, 2026-09-22T09:15:00-06:00. **U15 is delivered, and every unit in the grant is now
 delivered or withdrawn.** Source: the U15 run's evidence. Reason: each planned result is marked

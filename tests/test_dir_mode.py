@@ -714,6 +714,152 @@ class ADeclaredOriginDoesNotRelaxTheGuard(unittest.TestCase):
         self.assertEqual(result.declared_origin, "https://my-site.example")
 
 
+class ARedirectingPageIsAPointer(unittest.TestCase):
+    """U13 generalised by U16: a redirecting page produces no content finding, and stays visible.
+
+    The fix began as duplicate detection and is not about duplicates. A page reached through a
+    redirect is a pointer, it has no content of its own, and every content finding about it is a
+    finding about what it points at — which the crawl already visits and reports. On the first live
+    run this produced four of seven errors; on the re-run it left `/company/` named in `no_json_ld`
+    while the login page it redirects to was named in the same message.
+
+    **Both halves are asserted.** Excluding the page from every check including the redirect report
+    would be a different defect — a page quietly vanishing — and a test that asserted only the
+    absence would not notice it.
+    """
+
+    def pointer_and_target(self, target_extra=None):
+        target = PageFact(
+            url="https://example.com/", status=200, content_type="text/html",
+            title="Home", description="The home page",
+            canonical="https://example.com/", canonical_host="example.com",
+            json_ld_types=("Organization",),
+        )
+        pointer = PageFact(
+            url="https://example.com/company/", status=200, content_type="text/html",
+            title="Home", description="The home page",
+            canonical=None, json_ld_types=(),
+            redirect_to="https://example.com/",
+        )
+        pages = [target, pointer] + (target_extra or [])
+        return findings.analyse(CrawlResult(
+            target="https://example.com", origin="https://example.com",
+            declared_origin="https://example.com", pages=pages,
+        ))
+
+    def content_kinds(self, report):
+        content = {
+            "duplicate_title", "duplicate_description", "missing_title", "empty_title",
+            "missing_description", "canonical_missing", "canonical_other_host",
+            "canonical_other_path", "no_json_ld", "malformed_json_ld",
+        }
+        return [f for f in report.findings if f.kind in content]
+
+    def test_a_pointer_produces_no_content_finding(self):
+        report = self.pointer_and_target()
+        for finding in self.content_kinds(report):
+            with self.subTest(kind=finding.kind):
+                self.assertNotIn("/company/", finding.message, finding.message)
+
+    def test_the_pointer_does_not_suppress_a_real_gap_on_its_target(self):
+        # The target's own gap must still be reported, once, against the target.
+        target = PageFact(
+            url="https://example.com/", status=200, content_type="text/html",
+            title="Home", json_ld_types=(),
+        )
+        pointer = PageFact(
+            url="https://example.com/company/", status=200, content_type="text/html",
+            title="Home", json_ld_types=(), redirect_to="https://example.com/",
+        )
+        report = findings.analyse(CrawlResult(
+            target="https://example.com", origin="https://example.com",
+            declared_origin="https://example.com", pages=[target, pointer],
+        ))
+        gaps = [f for f in report.findings if f.kind == "no_json_ld"]
+        self.assertEqual(len(gaps), 1, "the target's gap should be reported exactly once")
+        # Findings name pages by their origin-relative path.
+        self.assertTrue(gaps[0].message.rstrip().endswith(": /"), gaps[0].message)
+        self.assertNotIn("/company/", gaps[0].message)
+
+    def test_the_redirect_itself_is_still_reported(self):
+        # The other half: excluded is not hidden.
+        report = self.pointer_and_target()
+        redirects = [f for f in report.findings if f.kind == "page_reached_by_redirect"]
+        self.assertEqual(len(redirects), 1, "the redirect was excluded without being reported")
+        self.assertIn("/company/", redirects[0].message)
+        self.assertIn("->", redirects[0].message, "the target of the redirect is not named")
+
+    def test_the_pointer_is_still_listed_as_a_page_read(self):
+        # A reader can see it was fetched and where it went, which is not the same as being silent
+        # about it.
+        report = self.pointer_and_target()
+        page = next(f for f in report.pages if f.url.endswith("/company/"))
+        self.assertEqual(page.redirect_to, "https://example.com/")
+        self.assertEqual(page.status, 200)
+
+    def test_two_pointers_to_one_target_do_not_multiply_its_gaps(self):
+        target = PageFact(url="https://example.com/", status=200, content_type="text/html",
+                          title="Home", json_ld_types=())
+        pointers = [
+            PageFact(url=f"https://example.com/p{i}/", status=200, content_type="text/html",
+                     title="Home", json_ld_types=(), redirect_to="https://example.com/")
+            for i in range(3)
+        ]
+        report = findings.analyse(CrawlResult(
+            target="https://example.com", origin="https://example.com",
+            declared_origin="https://example.com", pages=[target] + pointers,
+        ))
+        self.assertEqual(len([f for f in report.findings if f.kind == "no_json_ld"]), 1)
+        self.assertEqual(len([f for f in report.findings if f.kind == "page_reached_by_redirect"]), 1)
+
+
+class ADeclaredOriginDoesNotRelaxTheGuard(unittest.TestCase):
+    """U14's other direction, which the principal required be asserted.
+
+    The fix must not simply relax the host comparison. The guard exists because a build can declare
+    a canonical pointing anywhere, and the tool must not silently accept a build claiming to be
+    someone else's site. With an origin declared, a canonical on a third party's host is still a
+    finding and still gates.
+    """
+
+    def build(self, canonical: str):
+        """A one-page build whose canonical is whatever the caller says."""
+        import tempfile
+        from pathlib import Path
+
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        (root / "index.html").write_text(
+            f'<title>Home</title><link rel="canonical" href="{canonical}">'
+            '<script type="application/ld+json">{"@type":"Organization"}</script>'
+            "<body><p>text</p></body>",
+            encoding="utf-8",
+        )
+        return root
+
+    def test_a_build_declaring_a_third_partys_host_still_gates(self):
+        root = self.build("https://someone-elses-site.example/")
+        result = dir_crawl(root, origin="https://my-site.example")
+        report = findings.analyse(result)
+        self.assertIn("canonical_other_host", [f.kind for f in report.errors])
+        self.assertEqual(exit_code(report, strict=True), 1)
+
+    def test_a_build_declaring_its_own_origin_does_not(self):
+        root = self.build("https://my-site.example/")
+        result = dir_crawl(root, origin="https://my-site.example")
+        report = findings.analyse(result)
+        self.assertNotIn("canonical_other_host", [f.kind for f in report.findings])
+
+    def test_the_declared_origin_does_not_have_to_match_the_walked_origin(self):
+        # The whole point: the build is walked as https://localhost and claims to be
+        # https://my-site.example. Those are different facts and the check uses the second.
+        root = self.build("https://my-site.example/")
+        result = dir_crawl(root, origin="https://my-site.example")
+        self.assertEqual(result.origin, "https://localhost")
+        self.assertEqual(result.declared_origin, "https://my-site.example")
+
+
 class ARedirectingPageIsNotItsTarget(unittest.TestCase):
     """U13, from the first live run.
 

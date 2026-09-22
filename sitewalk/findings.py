@@ -101,7 +101,17 @@ def analyse(result: CrawlResult) -> SiteReport:
     # Only pages that answered 2xx are asked about their titles, descriptions, canonicals and
     # structured data. A page that returned 404 has none of those, and listing it six times
     # would bury the finding that actually matters — that it did not answer.
-    pages = [f for f in result.pages if f.is_html and f.ok]
+    #
+    # A page reached through a redirect is excluded for the same reason, generalised from the
+    # duplicate checks (U13, U16): it is a pointer, it does not have content of its own, and every
+    # content finding about it is a finding about what it points at — which the crawl already
+    # visits and reports. Excluding it only from duplicates left `/company/` named in `no_json_ld`
+    # while the login page it redirects to was named in the same message.
+    #
+    # What must survive: the redirect itself stays visible as a redirect (below), and the target's
+    # genuine gap is reported once, against the target.
+    content_pages = [f for f in result.pages if f.is_html and f.ok and not f.redirect_to]
+    pages = content_pages
     unread = [f for f in result.pages if f.is_html and not f.ok]
     by_url = {fact.url: fact for fact in result.pages}
     home = next((f for f in pages if relative_path(f.url) == "/"), None)

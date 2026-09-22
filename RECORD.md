@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 22
+revision: 23
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-22T01:30:00-06:00"
+updated_at: "2026-09-22T02:15:00-06:00"
 record_status: open
 work_status: active
 ---
@@ -18,72 +18,70 @@ conditions, the alternatives, the recommendation, the units, and the review.
 
 ## Current position
 
-Mode: **`Run`**. Revision 1 declared `Run` because the principal's first message prescribed the
-frame, the tool and its specification in full, leaving nothing to select. Revision 2 changed to
-`Plan` on the principal's instruction, because he then wanted the basis, alternatives and units
-ratified before implementation. This revision returns to `Run`: revision 2's plan has been
-**ratified**, the grant is registered below, and the mode now carries that settled choice through
-its units and stops at the return. Each mode change and its reason is preserved rather than
-overwritten.
+Mode: **`Run`**. The mode carries the ratified plan through its granted units and stops at the
+return; it was `Plan` while the plan was being prepared, and `Run` before that, and both changes
+with their reasons are in the mode history below. This section is position, not history: the
+reasons a mode changed are recorded where the change was made.
 
 Principal: David. Decider: David. Moss prepares the basis and recommends; Moss did not select.
 
 Work owner: Moss (coordinator).
 
 Decision: `selected` — **alternative A**, ratified by David on 2026-09-21 against basis revision 2
-of this record. The selection is recorded in Act under *Selection*, with the grant it authorises
-and the two answers that narrowed it (Q3: accept any `plan_version` and ignore keys this consumer
-does not know; Q5: a missing `llms.txt` must not gate). The product frame, the claim boundary and
-the tool specification remain `inherited` from the principal (2026-09-21,
-[`CONTEXT.md`](CONTEXT.md)) and are not reopened.
+of this record, and recorded in Act under *Selection* with the grant it authorises. The product
+frame, the claim boundary and the tool specification remain `inherited` from the principal
+(2026-09-21, [`CONTEXT.md`](CONTEXT.md)) and are not reopened.
 
-Work scope: **U1, U2, U3 and U5 delivered; U4 blocked on Q2; U6 registered and not granted.**
-U6 exists because confirming the robots.txt stance exposed a real gap: a gate that skips pages can
-pass while under-reporting, and the skip is not yet unmissable. U1 reconciled and cut back the
-pre-plan package against the registered facts contract, U2 hardened the address guard, U3 built
-the plan check, U5 wrote the reader-facing documents. Each registered its pickup plan before it
-started. U4 cannot start until the principal names a project and its `build/`.
+Work scope: the ratified plan and the units it authorises. **Their state is in Act's unit table and
+is deliberately not restated here** — a count in this section goes stale the moment a unit lands,
+and did: see the Changes entry for revision 23.
 
-Work: four units delivered, each with its evidence in the Review table. `make ci` exits 0 on the
-committed revision; 277 tests pass with the network unavailable. Three defects were found by
-testing rather than by reading, and each is recorded where it was found: the script-shell
-thresholds were silently tunable; the new check script could not fail; and the guard refused the
-http-to-https upgrade redirect. A fourth, the plan consumer coercing a malformed value into a
-valid one, was found while writing U3's leniency cases.
+Work: the delivery's evidence is in Review and its detail in Act. `make ci` exits 0 and the suite
+passes with the network unavailable; the counts and the defects found belong to the revision that
+produced them, so they are recorded there rather than summarised here.
 
 Outcome: the tool is built and green on its own fixtures. **Nothing has been observed against a
 real built site or a real live site**, which is what U4 is for, and that is the honest boundary on
-every claim below.
+every claim in this record.
 
-Next: Moss — hold the tree still until Finch's independent assessment returns, then address its
-findings under the grant and register U6's pickup plan before implementing it.
+Next: Moss — U4 is the only unit outstanding and it is blocked; no other unit is open. Register
+U4's pickup plan when the answer to Q2 arrives, and do not start it before then.
 Further pending: David, to answer Q2 by naming a project whose built directory U4 may run against.
 
-Dependency: The tree is frozen pending Finch's assessment, so U6 waits for that rather than for a
-decision; the grant, the shape and the pickup plan are all in place for it to start immediately
-after. **U4 is blocked on open question Q2**: the principal has not named
-which project's `build/` may be tested against, and no `build/` directory exists in this
-workspace. U4 must not run until he answers.
+Dependency: **U4 is blocked on open question Q2** — the principal has not named which project's
+`build/` may be tested against, and no `build/` directory exists in this workspace. Nothing else
+blocks anything; both Finch assessments and the principal's verification have returned.
 
-Waiting on: Finch (assessor), for the independent assessment of A1–A7. Further: David (principal),
-for Q2. The code is frozen until Finch returns, by the principal's instruction.
+Waiting on: David (principal), for Q2 only.
 
-Review due: 2026-10-05 — see Review. A1–A5, A8 and A9 become assessable when U1 returns; A6 and
-A7 at U2 and U3; B1–B3 need a real site and remain unobserved.
+Review due: 2026-10-05. A1–A9 are assessed, by Moss as self-check and by Finch independently for
+U1 and for U6–U9. **B1–B3 are unobserved and need a real site**, which is U4; they are the only
+criteria still pending.
 
-Authority: David ratified the plan and **granted U1–U5** on 2026-09-21. He retains **spending,
-outbound messages, external agreements and the release word for publication**. The grant's
-includes, excludes and stop condition are written out in Act; nothing outside them is authorised.
+Authority: David ratified the plan on 2026-09-21 and granted the units recorded in the grant under
+Act, U6–U9 by later instruction and ruling. He retains **spending, outbound messages, external
+agreements and the release word for publication**. The grant's includes, excludes and stop
+condition are written out in Act; nothing outside them is authorised.
 
 | Stage | began_at | registered_at / exact basis revision | finished_at |
 | --- | --- | --- | --- |
 | Frame and Decide (Run, revision 1) | 2026-09-21T11:49:00-06:00 | 2026-09-21T11:52:00-06:00 — revision 1 | 2026-09-21T11:52:00-06:00 |
 | Frame and Decide (Plan, revision 2) | 2026-09-21T12:14:00-06:00 | 2026-09-21T12:44:00-06:00 — revision 2 | 2026-09-21T12:44:00-06:00 |
 | Selection | — | 2026-09-21T13:05:00-06:00 — revision 2, alternative A, ratified by David | 2026-09-21T13:05:00-06:00 |
-| Act — U1 | 2026-09-21T13:05:00-06:00 | 2026-09-21T13:05:00-06:00 — **this revision**, U1 pickup plan | pending |
-| Act — U2, U3, U5 | pending — each registers its own pickup plan at its own pickup | pending | pending |
-| Act — U4 | blocked on Q2 | pending | pending |
-| Review | pending | 2026-09-21T12:44:00-06:00 — revision 2, Review criteria | pending |
+| Act | 2026-09-21T13:05:00-06:00 | 2026-09-21T13:05:00-06:00 — revision 3, U1 pickup plan | see the unit table in Act |
+| Review | 2026-09-21T14:05:00-06:00 | 2026-09-21T12:44:00-06:00 — revision 2, Review criteria | see Review |
+
+### Mode history
+
+Preserved because a later reader needs to know why the mode changed, and it is history rather than
+position:
+
+- **`Run`** (revision 1). The principal's first message prescribed the frame, the tool and its
+  specification in full, leaving nothing to select.
+- **`Plan`** (revision 2, 2026-09-21). The principal then wanted the basis, alternatives and units
+  ratified before implementation, and a planning run stops at the grant request.
+- **`Run`** (revision 3 onwards). The plan was ratified, so the mode carries the settled choice
+  through its units and stops at the return.
 
 ## Frame and Decide
 
@@ -729,6 +727,37 @@ back, and each corrected document claim needs the assertion or check that catche
 **Files U9 expects to touch:** `sitewalk/guard.py`, `sitewalk/errors.py`, `sitewalk/plan.py`,
 `sitewalk/facts.py`, `tests/test_guard.py`, `tests/fakes.py`, `docs/DESIGN.md`, and this record.
 
+### What the frozen format left open, and what this consumer inferred
+
+Registered 2026-09-22 at `siteplan`'s request, relayed by the principal. Their review closure records
+a limit they cannot close from their side: **one reader's successful implementation can absorb
+ambiguity in silence, and nobody has asked the implementer what it had to infer.** U7 and U8 were
+built against `siteplan/docs/PLAN-FORMAT.md` at `fe8433b` with no shared code, so this is the
+evidence that closure lacks. **These are document defects, not consumer choices**: `siteplan` owns the
+format, and each item below is a case where a second implementer could reasonably decide differently
+and produce a different verdict from the same file.
+
+| # | What the document does not settle | What this consumer inferred, and where | Consequence for a second implementer |
+| --- | --- | --- | --- |
+| G1 | **`json-ld` is "Schema.org JSON-LD in the HTML of the pages it describes"** — the document never says which pages, nor whether the requirement means the home page, every crawled page, or any page. This is the only vocabulary surface that is not a URL, so it is also the only one with no fetch to define it | **Any crawled page carrying a `@type` satisfies it**, whichever page that is (`plan.py`, the derived `json-ld` surface in `crawl.py`) | A consumer requiring it on the home page, or on every page, returns a *different verdict* for the same site. Verified: a site with JSON-LD only on a deep page **passes** here |
+| G2 | **"an unknown version … makes the verdict conditional … it is an error finding and exits non-zero"** never says whether reading continues, and the document does not distinguish a version below 1 from a known or older one | **Reading continues**, and a version below 1 is treated as older and read cleanly (`plan.py`) | A consumer that stops at a version it does not implement reports one fault where this reports keys as checked |
+| G3 | **A malformed file with an unknown version has no prescribed exit** — rule 4 gives `conditional` for "unknown or newer" and is silent on absent or mistyped | **An error that gates**, on the reasoning that an unsupported verdict is not a conditional one (`plan.py`) | A consumer could reasonably call it conditional, and the two disagree about whether a strict run passes |
+| G4 | **Duplicate JSON keys are "a matter for the JSON parser"** — no consumer behaviour is defined | **`json.loads` default, last value wins, no fault** (verified). The document has no way for a consumer to detect it at all | A consumer using a parser that keeps the first value produces a **different plan from the same bytes**, with no fault on either side. Two different sites' plans can be read from one file |
+| G5 | **"A consumer may carry it and report it as *not checked*"** — "carry" is undefined, and rule 6's "naming every key it ignored is the condition of that permission" does not say *where* naming happens | **Named in the human-readable notes only**; the ignored key is not a finding and does not appear in the machine-readable `findings` array | A machine consumer of the JSON cannot see which keys were ignored without parsing prose. Verified: the note carries the key, the findings array does not |
+
+**G1 and G4 are the two worth fixing first.** G1 changes a verdict on a normal site, and G4 has no
+detection path at all, so it is the one a producer cannot even warn about. G3 is the one where the
+document and this consumer differ most in spirit: the ruling the principal gave here — *a definite
+fault, reported as a fault, gating* — is this project's reading, not the document's.
+
+**What was not inferred.** The four version cases, the closed-vocabulary behaviour, the
+open-vocabulary Schema.org handling, the "no shared code" boundary and the nine keys all matched the
+document as written, and the implementation needed no clarification from `siteplan` for any of them.
+Whether the conformance fixture answered anything the prose did not: **`version-not-an-integer` and
+`unknown-version` confirmed decisions already taken from rule 4**, and no case contradicted the
+reading above. The fixture was used as the document says it may be, and 38 of its 45 cases were
+deliberately not asserted as consumer accept-cases, because they test the producer's faults.
+
 ### U6 pickup plan
 
 Registered before U6 begins. The principal granted U6 on 2026-09-21 and confirmed the shape below;
@@ -908,6 +937,18 @@ registered and pending.
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 23, 2026-09-22T02:15:00-06:00. **The Current position is rewritten, the rule that keeps it
+current is in `AGENTS.md`, and the format's open points are registered.** Source: the principal's
+observations of 2026-09-22 and `siteplan`'s request through him. Reason: the Current position still
+described four units delivered when nine were, named a lifted freeze, reported 277 tests against a
+suite of 331, and claimed U6 ungranted — the defect this record keeps finding, in the section a
+reader and the dashboard see first. What changed: `Current position` now states position and points
+at the tables for state, with the mode changes moved into a short history; `AGENTS.md`'s definition
+of done gains the rule that a summary carries pointers rather than counts, with this instance in the
+table; and the five points the frozen format left open are registered as G1–G5 with what this
+consumer inferred, for `siteplan` to rule on as document defects. What is preserved: every earlier
+revision and every criterion. Affects: the record's own reading, and `siteplan`'s format.
 
 Revision 22, 2026-09-22T01:30:00-06:00. **Finch's verification pass is answered: six findings,
 five confirmed and fixed, one withdrawn.** Source: Finch's assessment of `81413bd` and the

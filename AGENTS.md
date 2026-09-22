@@ -154,6 +154,13 @@ the parts that are not blocked.
 
 ## Definition of done
 
+- **`Current position` states position; it does not restate facts a table below already holds.**
+  A count, a list of delivered units or a status word in that section goes stale the moment the
+  work lands, and it is the first thing a reader and the dashboard see, so it is the most likely
+  place for a claim that was true when written to be believed long after it stopped being true.
+  Write *"their state is in Act's unit table"*, not *"nine units delivered"*. This is a rule about
+  the shape of a summary rather than about its content: the summary stays current by carrying
+  pointers, and the tables stay current because each entry is amended where the work happens.
 - **Every new test and fixture answers one question: *which wrong implementation would this
   catch?*** If the answer is none, the fixture is decoration and the test is counted as evidence
   while being none. A test that asserts only that a function returns what it returns is not a
@@ -175,9 +182,9 @@ the parts that are not blocked.
 
 ## Why this rule exists
 
-Added 2026-09-21. The same class — **a check that cannot fail** — was found five times in this
-project's first session, twice in code, once in a fixture, once in a process document, and once in
-a record. Each looked correct when it was written, and each was found by asking the question above
+Added 2026-09-21. The same class has now been found seven times in this project: twice in code, once in a fixture,
+once in a process document, twice in a record, and once in a summary that outlived what it
+described. Each looked correct when it was written, and each was found by asking the question above
 of work that seemed finished.
 
 | Instance | How it could not fail |
@@ -187,6 +194,7 @@ of work that seemed finished.
 | The raw-versus-processed quote (U6, caught before writing the test) | The fixture's `Disallow:` line had no comment and no padding, so quoting the parser's processed variable instead of the source line would have passed |
 | The conformance fixture (U7, caught before writing the test) | Asserting all 45 `siteplan` conformance cases as accept-cases would have failed 38 times while being wrong: those cases test the *producer's* faults, and a consumer is permitted to tolerate them |
 | A record correction (U7) | Fixing one contradiction between a criterion and a severity table introduced three more — a stale rule sentence, a wrong criterion count, and a missing acceptance-criteria line. A correction is where the author is most confident and least likely to look |
+| `Current position` (2026-09-22) | It still said four units delivered when nine were, named a freeze that had been lifted, reported 277 tests when the suite ran 331, and claimed U6 was ungranted. Everything below it was current and evidenced; the summary above described a state that ended before the work it summarised. Found by the principal, not by a test — see the rule in the definition of done, which is the fix |
 
 **Two practices that follow from it.**
 

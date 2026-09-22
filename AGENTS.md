@@ -189,10 +189,11 @@ the parts that are not blocked.
 
 ## Why this rule exists
 
-Added 2026-09-21, and the count has grown since. The same class has been found **seven** times in
-this project: twice in code, once in a fixture, once in a process document, twice in a record, and
-once in a summary that outlived what it described. Each looked correct when it was written, and each
-was found by asking the question above of work that seemed finished.
+Added 2026-09-21, and the count has grown since. The same class has been found **eight** times in
+this project: twice in code, once in a fixture, once in a process document, twice in a record, once
+in a summary that outlived what it described, and once in a conclusion that joined a measured time
+to an inferred cause. Each looked correct when it was written, and each was found by asking the
+question above of work that seemed finished.
 
 | Instance | How it could not fail |
 | --- | --- |

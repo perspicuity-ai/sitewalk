@@ -835,3 +835,73 @@ class TheJsonLdVerdictNamesThePageItLookedAt(unittest.TestCase):
                     with self.subTest(file=path.name, line=number):
                         self.assertNotIn("plan", line.lower().replace("plan_version", ""),
                                          f"{path.name}:{number} branches on the plan's kind: {line.strip()}")
+
+
+class ARealPlanFromTheProducer(unittest.TestCase):
+    """U15: the end-to-end gap, closed.
+
+    No `--plan` check had ever met a real plan. Every case until now was a hand-written fixture or
+    a conformance case, both of which test the consumer against its own understanding of the format.
+    This class records the run that used a plan written by the producer's own generator against a
+    real build, and it asserts the reading, not a verdict — the verdict depends on the site.
+
+    The plan and build are not in the repository: `siteplan new` wrote the plan into a scratch
+    directory and the build came from `agent-eligibility`. When they are absent the class skips
+    rather than pretends, because a test that silently passes on missing inputs is the defect this
+    project keeps finding.
+    """
+
+    BUILD = Path("/home/david/projects/agent-eligibility/build")
+    PLAN = Path(__file__).parent.parent / ".u4" / "plan" / "site.json"
+
+    def setUp(self):
+        if not self.BUILD.is_dir() or not self.PLAN.is_file():
+            self.skipTest("the U15 run's inputs are not present")
+
+    def run_plan(self):
+        from sitewalk.crawl import crawl as run_crawl
+        from sitewalk.sources import FileSource
+
+        source = FileSource(self.BUILD)
+        with fakes.no_network():
+            result = run_crawl(
+                source,
+                source.origin,
+                max_pages=50,
+                declared_origin="https://agents.perspicuity.ai",
+            )
+        report = findings.analyse(result)
+        apply_to_report(check_plan(report, load_plan(self.PLAN), path=str(self.PLAN)), report)
+        return report, to_dict(report)
+
+    def test_a_real_plan_is_read_without_a_fault(self):
+        # The producer's generator and this consumer share no code; a fault here would mean the
+        # format document is not enough to write to.
+        report, _data = self.run_plan()
+        self.assertEqual(
+            [f.message for f in report.errors if f.kind in ("plan_invalid", "plan_unreadable_key")],
+            [],
+        )
+
+    def test_the_producer_and_this_consumer_agree_the_plan_is_well_formed(self):
+        plan = load_plan(self.PLAN)
+        self.assertEqual(plan["plan_version"], 1)
+        check = check_plan(report_for(), plan)
+        self.assertEqual(check.problems, [])
+        self.assertEqual(check.ignored_keys, [])
+
+    def test_the_verdict_names_the_real_shortfalls(self):
+        # Both findings were checked by hand against the build: there is no rss.xml, and the home
+        # page carries Organization/Service/Offer but not WebSite.
+        _report, data = self.run_plan()
+        kinds = {f["kind"]: f["message"] for f in data["findings"]}
+        self.assertIn("plan_surface_missing", kinds)
+        self.assertIn("rss.xml", kinds["plan_surface_missing"])
+        self.assertIn("plan_identity_missing", kinds)
+        self.assertIn("WebSite", kinds["plan_identity_missing"])
+
+    def test_a_surface_the_site_does_publish_is_met_even_though_the_plan_is_not(self):
+        # The sub-checks are per key, so one unmet surface does not make the others false.
+        _report, data = self.run_plan()
+        self.assertFalse(data["plan"]["passed"])
+        self.assertEqual(data["plan"]["required_surfaces_unverified"], [])

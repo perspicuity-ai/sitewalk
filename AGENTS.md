@@ -162,6 +162,12 @@ the parts that are not blocked.
   Write *"their state is in Act's unit table"*, not *"nine units delivered"*. This is a rule about
   the shape of a summary rather than about its content: the summary stays current by carrying
   pointers, and the tables stay current because each entry is amended where the work happens.
+  **A count that must be stated for the record — a measurement a decision rested on, or an instance
+  in *Why this rule exists* — is dated and attributed to the revision it belongs to**, as in "238 of
+  240 at registration". A dated count cannot go stale, because it never claimed to be current; an
+  undated one is read as current the moment it is written. This is why the rule constrains the
+  shape and not the content: history is made of counts that were true when written, and the fix is a
+  date rather than an omission.
 - **Every new test and fixture answers one question: *which wrong implementation would this
   catch?*** If the answer is none, the fixture is decoration and the test is counted as evidence
   while being none. A test that asserts only that a function returns what it returns is not a

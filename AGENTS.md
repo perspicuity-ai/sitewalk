@@ -132,8 +132,9 @@ change is [`RECORD.md`](RECORD.md) revision 3.
 - **The report is deterministic.** No model may decide or alter a finding, a severity or an exit
   code. The same bytes produce the same report.
 - **A gate must be able to fail.** `scripts/check-project.sh` runs real checks and `--strict`
-  exits non-zero on an error finding. A green check that establishes nothing is worse than no
-  check, because it is believed.
+  exits non-zero on a **gating** finding — severity `error` or `conditional`, per the policy table
+  in `facts.GATING_SEVERITIES`. A green check that establishes nothing is worse than no check,
+  because it is believed.
 - **No accounts, cookies, tracking, telemetry or paid API.** The client sends no cookie and keeps
   no credential.
 - **No persistence and no PII.** Nothing is written to disk, and nothing about a person is
@@ -182,10 +183,10 @@ the parts that are not blocked.
 
 ## Why this rule exists
 
-Added 2026-09-21. The same class has now been found seven times in this project: twice in code, once in a fixture,
-once in a process document, twice in a record, and once in a summary that outlived what it
-described. Each looked correct when it was written, and each was found by asking the question above
-of work that seemed finished.
+Added 2026-09-21, and the count has grown since. The same class has been found **seven** times in
+this project: twice in code, once in a fixture, once in a process document, twice in a record, and
+once in a summary that outlived what it described. Each looked correct when it was written, and each
+was found by asking the question above of work that seemed finished.
 
 | Instance | How it could not fail |
 | --- | --- |
@@ -194,6 +195,7 @@ of work that seemed finished.
 | The raw-versus-processed quote (U6, caught before writing the test) | The fixture's `Disallow:` line had no comment and no padding, so quoting the parser's processed variable instead of the source line would have passed |
 | The conformance fixture (U7, caught before writing the test) | Asserting all 45 `siteplan` conformance cases as accept-cases would have failed 38 times while being wrong: those cases test the *producer's* faults, and a consumer is permitted to tolerate them |
 | A record correction (U7) | Fixing one contradiction between a criterion and a severity table introduced three more — a stale rule sentence, a wrong criterion count, and a missing acceptance-criteria line. A correction is where the author is most confident and least likely to look |
+| A plan sub-check (U9) | `report.plan` said `required_surfaces_met: true` beside `passed: false`, because a check that never ran reported as though it had. Found by Finch, not by the suite |
 | `Current position` (2026-09-22) | It still said four units delivered when nine were, named a freeze that had been lifted, reported 277 tests when the suite ran 331, and claimed U6 was ungranted. Everything below it was current and evidenced; the summary above described a state that ended before the work it summarised. Found by the principal, not by a test — see the rule in the definition of done, which is the fix |
 
 **Two practices that follow from it.**

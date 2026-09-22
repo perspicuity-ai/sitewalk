@@ -96,7 +96,11 @@ The verdict depends on what this tool actually knows:
 | An unknown key | ignored, **and named as a finding**, so a `met` never hides something that was not checked. Listed in `plan.ignored_keys` and as an `info` finding | not on its own |
 
 This tool checks all five surfaces the format's vocabulary defines — `robots.txt`, `sitemap.xml`,
-`llms.txt` and `rss.xml` by fetching them, and `json-ld` by reading the pages it already has. So no
+`llms.txt` and `rss.xml` by fetching them, and `json-ld` by reading the pages it already has.
+`json-ld` is met when Schema.org markup appears on **any page the site serves**, and the report
+**names the page it found it on** — a content site's markup belongs on its articles, not its front
+door. A front-door requirement is a different key, `identity.schema_types`, which is checked against
+the home page; the tool never branches on the plan's `kind`. So no
 plan can ask for something the gate cannot certify today. If the format adds a sixth, the gap
 reopens and the rule still holds: an unverifiable surface is reported *unverified* and gates under
 `--strict` rather than passing silently.

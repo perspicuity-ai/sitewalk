@@ -240,7 +240,14 @@ established, so the vocabulary is now fully covered:
 * `robots.txt`, `sitemap.xml`, `llms.txt`, `rss.xml` — fetched at the site root. One request each,
   in the loop that already existed; adding `rss.xml` was one name in `SURFACE_PATHS`.
 * `json-ld` — **not a URL**. It is derived from `PageFact.json_ld_types`, a fact already held and
-  previously used only for a count. No request.
+  previously used only for a count. No request. The format defines what satisfies it (markup on
+  **some page the site serves**), and requires the consumer to **name the page it found the markup
+  on** — "json-ld: met" without the page is the same class of claim as a verdict on a version the
+  consumer does not know. So a derived surface carries `pages`: the pages that carry the markup, or
+  the pages read when none does. The front-door requirement is `identity.schema_types`, checked on
+  the home page, and a consumer **must not branch on `kind`** to check a surface — the format says
+  so explicitly, because a surface whose verdict depends on the kind would make every consumer
+  re-implement the producer's catalogue.
 
 **The four states are a discriminator, not a pair of nulls.** A `Surface` carrying only a `url` and
 a `status` cannot represent a derived surface, and an entry with both null reads as *fetched and

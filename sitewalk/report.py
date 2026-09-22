@@ -87,6 +87,7 @@ def to_dict(report: SiteReport) -> dict[str, Any]:
                 "bytes": surface.bytes,
                 "error": surface.error,
                 "note": surface.note,
+                "pages": list(surface.pages),
             }
             for name, surface in sorted(report.surfaces.items())
         },
@@ -230,6 +231,12 @@ def to_text(report: SiteReport) -> str:
     for name, surface in sorted(report.surfaces.items()):
         if surface.state == DERIVED:
             detail = surface.note or "derived from pages already read"
+            if surface.pages and not surface.exists:
+                detail += f"; pages read: {', '.join(relative_path(p) for p in surface.pages)}"
+            elif surface.pages:
+                detail += (
+                    "; found on: " + ", ".join(relative_path(p) for p in surface.pages)
+                )
         elif surface.state == NOT_CHECKED:
             detail = "this tool has no check for it"
         else:

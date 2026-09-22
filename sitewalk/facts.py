@@ -147,6 +147,11 @@ class Surface:
     #: Without it, "derived" would have to mean "exists", and every site would appear to publish
     #: JSON-LD — the same overclaim the states exist to prevent.
     established: bool = False
+    #: For a ``derived`` surface only: the pages the fact was found on, or the pages read when it
+    #: was not. The format requires a consumer checking ``json-ld`` to name the page it found the
+    #: markup on: "json-ld: met" without the page is the same class of claim as a verdict on a
+    #: version the consumer does not know.
+    pages: tuple[str, ...] = ()
 
     @property
     def exists(self) -> bool:

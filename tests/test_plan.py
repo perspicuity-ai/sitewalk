@@ -740,3 +740,98 @@ def dir_crawl():
 
     source = FileSource(FIXTURES / "example-site")
     return run_crawl(source, source.origin)
+
+
+class TheJsonLdVerdictNamesThePageItLookedAt(unittest.TestCase):
+    """The live clause of the format's `json-ld` rule, added after the home-page rule was
+    superseded.
+
+    The document now says: a site satisfies `json-ld` when markup appears in the HTML of **any**
+    page it serves; the front-door requirement is `identity.schema_types`, checked on the home
+    page; a consumer **must not branch on `kind`**; and a consumer checking this surface **names the
+    page it found the markup on**, because "json-ld: met" without the page is the same class of
+    claim as a verdict on a version the consumer does not know.
+
+    The first two of those `sitewalk` already did. The naming is what this covers, and it was a
+    real gap: the surface said "4 of 11 carry one" and named none of them.
+    """
+
+    def surfaces_for(self, directory):
+        report = findings.analyse(_crawl(directory))
+        return report, to_dict(report)["surfaces"]["json-ld"]
+
+    def test_the_page_carrying_the_markup_is_named(self):
+        _report, surface = self.surfaces_for(FIXTURES / "example-site")
+        self.assertTrue(surface["exists"])
+        self.assertIn("https://localhost/", surface["pages"])
+        self.assertIn("https://localhost/team/", surface["pages"])
+
+    def test_the_named_pages_are_the_ones_that_actually_carry_it(self):
+        report, surface = self.surfaces_for(FIXTURES / "example-site")
+        carrying = {f.url for f in report.pages if f.json_ld_types}
+        self.assertEqual(set(surface["pages"]), carrying)
+
+    def test_when_no_page_carries_it_the_pages_read_are_named(self):
+        # The rule's other half: "a consumer that found no markup anywhere reports the surface
+        # unmet, naming the pages it read".
+        _report, surface = self.surfaces_for(FIXTURES / "bare-site")
+        self.assertFalse(surface["exists"])
+        self.assertTrue(surface["pages"], "no page was named")
+        self.assertIn("https://localhost/", surface["pages"])
+
+    def test_a_site_with_markup_only_on_an_inner_page_is_met(self):
+        # The clause that made home-page-only wrong: a content site's Article markup belongs on its
+        # articles, not its front door.
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "index.html").write_text("<title>Home</title><a href='/post/'>p</a>", encoding="utf-8")
+            (root / "post").mkdir()
+            (root / "post" / "index.html").write_text(
+                '<title>Post</title><script type="application/ld+json">{"@type":"Article"}</script>',
+                encoding="utf-8",
+            )
+            report = findings.analyse(_crawl(root))
+            surface = to_dict(report)["surfaces"]["json-ld"]
+            check = check_plan(report, {"plan_version": 1, "required_surfaces": ["json-ld"]})
+        self.assertTrue(surface["exists"])
+        self.assertEqual(check.verdict, "met")
+        self.assertEqual(list(surface["pages"]), ["https://localhost/post/"])
+
+    def test_the_home_page_requirement_is_identity_not_this_surface(self):
+        # The two keys do two jobs: `json-ld` says markup is published somewhere, and `identity`
+        # says what the front door declares. A site with markup only on an inner page therefore
+        # satisfies the surface and fails an identity requirement, which is the split working.
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "index.html").write_text("<title>Home</title><a href='/post/'>p</a>", encoding="utf-8")
+            (root / "post").mkdir()
+            (root / "post" / "index.html").write_text(
+                '<title>Post</title><script type="application/ld+json">{"@type":"Article"}</script>',
+                encoding="utf-8",
+            )
+            report = findings.analyse(_crawl(root))
+            surfaces = check_plan(report, {"plan_version": 1, "required_surfaces": ["json-ld"]})
+            identity = check_plan(report, {"plan_version": 1, "identity": {"schema_types": ["Article"]}})
+        self.assertEqual(surfaces.verdict, "met")
+        self.assertEqual(identity.missing_schema_types, ["Article"])
+
+    def test_no_consumer_branching_on_kind(self):
+        # The document forbids it, and the reason is that it would make every consumer re-implement
+        # the catalogue. Asserted mechanically over the package.
+        import pathlib as _pathlib
+
+        package = _pathlib.Path(__file__).parent.parent / "sitewalk"
+        for path in package.glob("*.py"):
+            text = path.read_text()
+            for number, line in enumerate(text.splitlines(), 1):
+                if "kind" in line and ("==" in line or "in (" in line) and "plan" in text:
+                    # `kind` may be read and reported; it must not steer a check.
+                    with self.subTest(file=path.name, line=number):
+                        self.assertNotIn("plan", line.lower().replace("plan_version", ""),
+                                         f"{path.name}:{number} branches on the plan's kind: {line.strip()}")

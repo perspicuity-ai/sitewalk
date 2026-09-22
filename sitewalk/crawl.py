@@ -244,10 +244,15 @@ def crawl(
     #    read. Recorded as a derived surface so a plan requiring it gets a real verdict, and so a
     #    reader can tell "derived" from "fetched and empty".
     carrying = [fact.url for fact in result.pages if fact.json_ld_types]
+    read = [fact.url for fact in result.pages if fact.is_html]
+    # The format requires the page to be named either way: markup found, or the pages read when it
+    # was not. A verdict without them is the claim this rule exists to prevent.
+    named = carrying or read
     result.surfaces["json-ld"] = Surface(
         name="json-ld",
         state=DERIVED,
         established=bool(carrying),
+        pages=tuple(named),
         note=(
             f"derived from the JSON-LD @type values of the pages read: "
             f"{len(carrying)} of {len(result.pages)} carry one"

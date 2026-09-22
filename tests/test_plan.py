@@ -574,3 +574,74 @@ class ANotCheckedSurfaceIsStillHandled(unittest.TestCase):
         from sitewalk.plan import CHECKED_SURFACES, KNOWN_SURFACES
 
         self.assertEqual(set(KNOWN_SURFACES), set(CHECKED_SURFACES))
+
+
+class DuplicateKeysAreRefusedNotSilentlyResolved(unittest.TestCase):
+    """G4, corrected: the default parser hides duplicates, the parser as a whole does not.
+
+    `json.loads` collapses a repeated key silently, so two consumers with different parsers read
+    different plans from the same bytes and neither reports a fault. `object_pairs_hook` sees the
+    pairs before they collapse, so this consumer refuses instead of choosing. The distinction
+    matters: "last wins" is a silent divergence between implementations, which is the defect class
+    this project exists to remove, and "invalid, detected and refused" makes it visible on the one
+    input that triggers it.
+    """
+
+    def write(self, text: str) -> str:
+        import tempfile
+        from pathlib import Path
+
+        handle = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+        handle.write(text)
+        handle.close()
+        self.addCleanup(Path(handle.name).unlink)
+        return handle.name
+
+    def test_a_top_level_duplicate_is_refused(self):
+        path = self.write('{"plan_version": 1, "site": "first.example", "site": "second.example"}')
+        with self.assertRaises(ValueError) as caught:
+            load_plan(path)
+        self.assertIn("duplicate key", str(caught.exception))
+        self.assertIn("site", str(caught.exception))
+
+    def test_a_nested_duplicate_is_refused_too(self):
+        path = self.write(
+            '{"plan_version": 1, "identity": {"schema_types": ["A"], "schema_types": ["B"]}}'
+        )
+        with self.assertRaises(ValueError) as caught:
+            load_plan(path)
+        self.assertIn("schema_types", str(caught.exception))
+
+    def test_the_same_key_in_different_objects_is_not_a_duplicate(self):
+        # The rule is one key per object, not one key per file. A plan legitimately repeats
+        # `schema_types` under `identity` and under `offering`.
+        path = self.write(
+            '{"plan_version": 1, "identity": {"schema_types": ["A"]}, '
+            '"offering": {"schema_types": ["B"]}}'
+        )
+        plan = load_plan(path)
+        self.assertEqual(plan["identity"]["schema_types"], ["A"])
+        self.assertEqual(plan["offering"]["schema_types"], ["B"])
+
+    def test_the_conformance_fixtures_still_load(self):
+        # The hook must not reject anything a well-formed plan legitimately contains.
+        import json
+        from pathlib import Path
+
+        fixture = Path("/home/david/projects/siteplan/docs/fixtures/plan-conformance.json")
+        if not fixture.exists():
+            self.skipTest("the siteplan conformance fixture is not present")
+        for case in json.loads(fixture.read_text())["cases"]:
+            if not isinstance(case["plan"], dict):
+                continue  # the not-an-object case is refused for being the wrong shape, not this
+            with self.subTest(case=case["name"]):
+                path = self.write(json.dumps(case["plan"]))
+                load_plan(path)  # raises only if the hook is too strict
+
+    def test_the_default_parser_would_have_hidden_it(self):
+        # Records why the hook is needed at all: the same text through plain json.loads gives a
+        # silent answer, so a test asserting the refusal must not be able to pass on a plain load.
+        import json
+
+        text = '{"plan_version": 1, "site": "first.example", "site": "second.example"}'
+        self.assertEqual(json.loads(text)["site"], "second.example")

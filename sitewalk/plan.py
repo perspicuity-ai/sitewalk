@@ -94,6 +94,23 @@ class PlanCheck:
         return "met"
 
 
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Build an object, refusing a repeated key.
+
+    ``json.loads`` collapses duplicates silently, so two consumers using different parsers can read
+    **different plans from the same bytes** with no fault on either side — the silent divergence
+    this project exists to remove. The format leaves duplicates to the parser and so cannot warn
+    about them; ``object_pairs_hook`` can, so this consumer detects and refuses them rather than
+    picking one. Nested objects get the same treatment: the hook is called for every object.
+    """
+    seen: set[str] = set()
+    for key, _value in pairs:
+        if key in seen:
+            raise ValueError(f"duplicate key {key!r} in the same JSON object")
+        seen.add(key)
+    return dict(pairs)
+
+
 def load_plan(path: str | Path) -> dict[str, Any]:
     """Read a plan file. Raises ``ValueError`` with a readable message when it cannot be used."""
     plan_path = Path(path)
@@ -102,7 +119,7 @@ def load_plan(path: str | Path) -> dict[str, Any]:
     except OSError as exc:
         raise ValueError(f"could not read the plan file {plan_path}: {exc}") from exc
     try:
-        data = json.loads(text)
+        data = json.loads(text, object_pairs_hook=_reject_duplicate_keys)
     except ValueError as exc:
         raise ValueError(f"the plan file {plan_path} is not valid JSON: {exc}") from exc
     if not isinstance(data, dict):

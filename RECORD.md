@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 23
+revision: 24
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-22T02:15:00-06:00"
+updated_at: "2026-09-22T03:00:00-06:00"
 record_status: open
 work_status: active
 ---
@@ -741,14 +741,16 @@ and produce a different verdict from the same file.
 | --- | --- | --- | --- |
 | G1 | **`json-ld` is "Schema.org JSON-LD in the HTML of the pages it describes"** — the document never says which pages, nor whether the requirement means the home page, every crawled page, or any page. This is the only vocabulary surface that is not a URL, so it is also the only one with no fetch to define it | **Any crawled page carrying a `@type` satisfies it**, whichever page that is (`plan.py`, the derived `json-ld` surface in `crawl.py`) | A consumer requiring it on the home page, or on every page, returns a *different verdict* for the same site. Verified: a site with JSON-LD only on a deep page **passes** here |
 | G2 | **"an unknown version … makes the verdict conditional … it is an error finding and exits non-zero"** never says whether reading continues, and the document does not distinguish a version below 1 from a known or older one | **Reading continues**, and a version below 1 is treated as older and read cleanly (`plan.py`) | A consumer that stops at a version it does not implement reports one fault where this reports keys as checked |
-| G3 | **A malformed file with an unknown version has no prescribed exit** — rule 4 gives `conditional` for "unknown or newer" and is silent on absent or mistyped | **An error that gates**, on the reasoning that an unsupported verdict is not a conditional one (`plan.py`) | A consumer could reasonably call it conditional, and the two disagree about whether a strict run passes |
-| G4 | **Duplicate JSON keys are "a matter for the JSON parser"** — no consumer behaviour is defined | **`json.loads` default, last value wins, no fault** (verified). The document has no way for a consumer to detect it at all | A consumer using a parser that keeps the first value produces a **different plan from the same bytes**, with no fault on either side. Two different sites' plans can be read from one file |
+| G3 | **A malformed file with an unknown version has no prescribed exit** — rule 4 gives `conditional` for "unknown or newer" and is silent on absent or mistyped | **An error that gates.** This is **the principal's ruling**, given on 2026-09-21 in answer to this project's question whether a missing version should gate — not a shared inference and not this consumer's reading. It is recorded here as it stands: **a gap in a frozen document that a principal has already filled by decision**, and `siteplan` should know the decision exists because a second implementer has no way to reach it from the document | A consumer could reasonably call it conditional, and the two disagree about whether a strict run passes. The disagreement is between a consumer and a **ruling**, not between two readings |
+| G4 | **Duplicate JSON keys are "a matter for the JSON parser"** — no consumer behaviour is defined | **Detected and refused** (corrected 2026-09-22). `json.loads`' default is last-value-wins and silent, but `object_pairs_hook` sees the pairs before they collapse, so `load_plan` raises `duplicate key 'site' in the same JSON object` and the run exits 2. Nested objects are covered by the same hook. **The first version of this row said the document "has no way for a consumer to detect it at all", which was false** and is the sentence that would have stopped someone fixing it | A consumer using a parser that keeps the first value reads a **different plan from the same bytes**. That divergence is now refused here rather than resolved silently, so the one input that triggers it is visible |
 | G5 | **"A consumer may carry it and report it as *not checked*"** — "carry" is undefined, and rule 6's "naming every key it ignored is the condition of that permission" does not say *where* naming happens | **Named in the human-readable notes only**; the ignored key is not a finding and does not appear in the machine-readable `findings` array | A machine consumer of the JSON cannot see which keys were ignored without parsing prose. Verified: the note carries the key, the findings array does not |
 
-**G1 and G4 are the two worth fixing first.** G1 changes a verdict on a normal site, and G4 has no
-detection path at all, so it is the one a producer cannot even warn about. G3 is the one where the
-document and this consumer differ most in spirit: the ruling the principal gave here — *a definite
-fault, reported as a fault, gating* — is this project's reading, not the document's.
+**G1 and G4 are the two worth fixing first.** G1 changes a verdict on a normal site. G4's ambiguity
+is now closed on this side — duplicates are refused rather than resolved — but the document still
+leaves it to the parser, so a producer cannot warn about what it cannot check, and a consumer without
+the hook still diverges silently. **G4's correction is itself the lesson**: this row first claimed
+detection was impossible, which would have stopped anyone fixing it; the principal caught it. "Not
+detectable" is a strong claim and needed the check that any strong claim needs.
 
 **What was not inferred.** The four version cases, the closed-vocabulary behaviour, the
 open-vocabulary Schema.org handling, the "no shared code" boundary and the nine keys all matched the
@@ -937,6 +939,19 @@ registered and pending.
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 24, 2026-09-22T03:00:00-06:00. **G4 is corrected: duplicates are detectable, and are now
+refused. G3 is re-attributed to the principal's ruling.** Source: the principal's correction of
+2026-09-22. Reason: the row claimed the format "has no way for a consumer to detect" duplicate keys,
+which is true of the default `json.loads` call and false of the parser — `object_pairs_hook` sees the
+pairs before they collapse. That is the defect this record keeps finding, in the section written to
+report defects, and it is the sentence that would have stopped someone fixing it. What changed: the
+row is corrected and marked as corrected; `load_plan` refuses a repeated key at any depth with the
+key named, and the run exits 2; a test class covers top-level and nested duplicates, the legitimate
+repeat across different objects, and that every conformance case still loads; and G3 now records that
+the malformed-version behaviour is a **ruling by the principal**, not a shared inference — a gap in a
+frozen document that a principal has already filled by decision. What is preserved: G1, G2, G5 and
+every earlier revision.
 
 Revision 23, 2026-09-22T02:15:00-06:00. **The Current position is rewritten, the rule that keeps it
 current is in `AGENTS.md`, and the format's open points are registered.** Source: the principal's

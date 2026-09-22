@@ -20,9 +20,10 @@ import unittest
 from pathlib import Path
 
 from sitewalk import findings
-from sitewalk.crawl import crawl
-from sitewalk.facts import Page
+from sitewalk.crawl import CrawlResult, crawl
+from sitewalk.facts import Page, PageFact
 from sitewalk.pages import content_type_of
+from sitewalk.report import exit_code
 from sitewalk.sources import FileSource
 from sitewalk.urls import SURFACE_PATHS
 
@@ -89,10 +90,12 @@ def live_crawl(directory: Path = EXAMPLE, **kwargs):
     return result, http
 
 
-def dir_crawl(directory: Path = EXAMPLE, **kwargs):
+def dir_crawl(directory: Path = EXAMPLE, origin: str = "", **kwargs):
+    """Crawl a fixture offline. ``origin`` is the site the build claims to be, when a test needs
+    the canonical and sitemap checks to have something to judge against."""
     with fakes.no_network():
         source = FileSource(directory)
-        return crawl(source, source.origin, **kwargs)
+        return crawl(source, source.origin, declared_origin=origin, **kwargs)
 
 
 class PathMapping(unittest.TestCase):
@@ -240,7 +243,7 @@ class TheOfflineCrawl(unittest.TestCase):
         self.assertIn("https://localhost/one.html", result.sitemap_urls)
         self.assertIn("https://localhost/one.html", {f.url for f in result.pages})
 
-    def test_a_sitemap_naming_another_origin_is_not_followed(self):
+    def test_a_sitemap_naming_a_foreign_url_is_not_followed(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "index.html").write_text("<title>home</title>", encoding="utf-8")
@@ -251,7 +254,27 @@ class TheOfflineCrawl(unittest.TestCase):
             )
             result = dir_crawl(root)
         self.assertNotIn("https://elsewhere.example/other", {f.url for f in result.pages})
-        self.assertTrue(any("off the submitted origin" in note for note in result.notes))
+        self.assertTrue(any("off the site" in note for note in result.notes))
+
+    def test_a_build_declaring_its_own_origin_has_its_sitemap_read(self):
+        # The U14 case on a build directory: the sitemap names the deploy target, so its URLs are
+        # accepted and mapped onto the synthetic origin the build is walked as.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "index.html").write_text("<title>home</title>", encoding="utf-8")
+            (root / "about").mkdir()
+            (root / "about" / "index.html").write_text("<title>about</title>", encoding="utf-8")
+            (root / "sitemap.xml").write_text(
+                '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                "<url><loc>https://example.com/</loc></url>"
+                "<url><loc>https://example.com/about/</loc></url></urlset>",
+                encoding="utf-8",
+            )
+            result = dir_crawl(root, origin="https://example.com")
+        self.assertEqual(len(result.sitemap_urls), 2)
+        reached = {f.url for f in result.pages}
+        self.assertIn("https://localhost/about/", reached)
+        self.assertIn("https://localhost/", reached)
 
     def test_an_unreadable_sitemap_is_reported_rather_than_empty(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -323,6 +346,43 @@ class DirAndUrlAgreeOnTheSameBytes(unittest.TestCase):
                 self.assertEqual(fact.visible_text_chars, offline[url].visible_text_chars)
                 self.assertEqual(fact.title, offline[url].title)
                 self.assertEqual(fact.json_ld_types, offline[url].json_ld_types)
+
+
+class TheCanonicalCheckNeedsADeclaredOrigin(unittest.TestCase):
+    """U14's chosen behaviour: no origin declared means no host judgement, and the report says so.
+
+    Guessing the origin from the build's own metadata would be circular when that metadata is what
+    the check is about, so the check does not run and the reader is told why.
+    """
+
+    def test_without_an_origin_no_canonical_is_called_foreign(self):
+        report = findings.analyse(dir_crawl())
+        self.assertNotIn("canonical_other_host", [f.kind for f in report.findings])
+        self.assertTrue(
+            any("no origin was declared" in note for note in report.notes),
+            "the report does not say why the check was silent",
+        )
+
+    def test_the_canonical_is_still_reported_as_a_fact(self):
+        report = findings.analyse(dir_crawl())
+        page = next(f for f in report.pages if f.url.endswith("/services/"))
+        self.assertEqual(page.canonical_host, "example.org")
+
+    def test_with_the_origin_declared_a_foreign_host_is_a_finding_again(self):
+        # The fixture's services page declares example.org while the site is localhost, and no
+        # declared origin matches example.org, so this must still gate.
+        report = findings.analyse(dir_crawl(origin="https://localhost"))
+        self.assertIn("canonical_other_host", [f.kind for f in report.findings])
+
+    def test_a_canonical_matching_the_declared_origin_is_not_foreign(self):
+        report = findings.analyse(dir_crawl(origin="https://example.org"))
+        pages_named = [
+            f.message for f in report.findings if f.kind == "canonical_other_host"
+        ]
+        self.assertFalse(
+            any("example.org" in m for m in pages_named),
+            "a canonical matching the declared origin was called foreign",
+        )
 
 
 class TheCommandLineMakesNoNetworkRequest(unittest.TestCase):
@@ -605,3 +665,136 @@ class ARssFeedIsCheckedLikeAnyOtherSurface(unittest.TestCase):
         self.assertEqual(surface.url, "")
         self.assertEqual(surface.status, 0)
         self.assertNotIn("/json-ld", " ".join(f.url for f in result.pages))
+
+
+class ADeclaredOriginDoesNotRelaxTheGuard(unittest.TestCase):
+    """U14's other direction, which the principal required be asserted.
+
+    The fix must not simply relax the host comparison. The guard exists because a build can declare
+    a canonical pointing anywhere, and the tool must not silently accept a build claiming to be
+    someone else's site. With an origin declared, a canonical on a third party's host is still a
+    finding and still gates.
+    """
+
+    def build(self, canonical: str):
+        """A one-page build whose canonical is whatever the caller says."""
+        import tempfile
+        from pathlib import Path
+
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        (root / "index.html").write_text(
+            f'<title>Home</title><link rel="canonical" href="{canonical}">'
+            '<script type="application/ld+json">{"@type":"Organization"}</script>'
+            "<body><p>text</p></body>",
+            encoding="utf-8",
+        )
+        return root
+
+    def test_a_build_declaring_a_third_partys_host_still_gates(self):
+        root = self.build("https://someone-elses-site.example/")
+        result = dir_crawl(root, origin="https://my-site.example")
+        report = findings.analyse(result)
+        self.assertIn("canonical_other_host", [f.kind for f in report.errors])
+        self.assertEqual(exit_code(report, strict=True), 1)
+
+    def test_a_build_declaring_its_own_origin_does_not(self):
+        root = self.build("https://my-site.example/")
+        result = dir_crawl(root, origin="https://my-site.example")
+        report = findings.analyse(result)
+        self.assertNotIn("canonical_other_host", [f.kind for f in report.findings])
+
+    def test_the_declared_origin_does_not_have_to_match_the_walked_origin(self):
+        # The whole point: the build is walked as https://localhost and claims to be
+        # https://my-site.example. Those are different facts and the check uses the second.
+        root = self.build("https://my-site.example/")
+        result = dir_crawl(root, origin="https://my-site.example")
+        self.assertEqual(result.origin, "https://localhost")
+        self.assertEqual(result.declared_origin, "https://my-site.example")
+
+
+class ARedirectingPageIsNotItsTarget(unittest.TestCase):
+    """U13, from the first live run.
+
+    Two of the seven live errors were this: `/accounts/logout/` redirects to `/` and was reported as
+    a duplicate of it, and `/company/` redirects to `/accounts/login/` and was reported as a
+    duplicate of that. A page reached through a redirect serves its target's content, so its title
+    and description are the target's; counting both reports one page twice.
+    """
+
+    def test_a_redirecting_page_is_not_a_duplicate_of_its_target(self):
+        target = PageFact(
+            url="https://example.com/", status=200, content_type="text/html",
+            title="Home", description="The home page",
+        )
+        redirecting = PageFact(
+            url="https://example.com/logout/", status=200, content_type="text/html",
+            title="Home", description="The home page",
+            redirect_to="https://example.com/",
+        )
+        result = CrawlResult(
+            target="https://example.com", origin="https://example.com",
+            pages=[target, redirecting],
+        )
+        report = findings.analyse(result)
+        self.assertNotIn("duplicate_title", [f.kind for f in report.findings])
+        self.assertNotIn("duplicate_description", [f.kind for f in report.findings])
+
+    def test_the_redirect_is_still_reported_rather_than_hidden(self):
+        target = PageFact(url="https://example.com/", status=200, content_type="text/html", title="Home")
+        redirecting = PageFact(
+            url="https://example.com/logout/", status=200, content_type="text/html",
+            title="Home", redirect_to="https://example.com/",
+        )
+        report = findings.analyse(CrawlResult(
+            target="https://example.com", origin="https://example.com",
+            pages=[target, redirecting],
+        ))
+        found = report.errors_of("page_reached_by_redirect") + [
+            f for f in report.findings if f.kind == "page_reached_by_redirect"
+        ]
+        self.assertTrue(found, "the redirect was excluded without saying so")
+        self.assertIn("/logout/", found[0].message)
+
+    def test_two_pages_redirecting_to_one_are_not_duplicates_of_each_other(self):
+        # The live shape: /accounts/logout/ -> / and /company/ -> /accounts/login/.
+        pages = [
+            PageFact(url="https://example.com/", status=200, content_type="text/html", title="Home"),
+            PageFact(url="https://example.com/login/", status=200, content_type="text/html", title="Sign In"),
+            PageFact(url="https://example.com/logout/", status=200, content_type="text/html",
+                     title="Home", redirect_to="https://example.com/"),
+            PageFact(url="https://example.com/company/", status=200, content_type="text/html",
+                     title="Sign In", redirect_to="https://example.com/login/"),
+        ]
+        report = findings.analyse(CrawlResult(
+            target="https://example.com", origin="https://example.com", pages=pages,
+        ))
+        self.assertNotIn("duplicate_title", [f.kind for f in report.findings])
+        # But a genuine duplicate among pages served directly is still reported.
+        pages.append(PageFact(url="https://example.com/other/", status=200,
+                              content_type="text/html", title="Home"))
+        report = findings.analyse(CrawlResult(
+            target="https://example.com", origin="https://example.com", pages=pages,
+        ))
+        self.assertIn("duplicate_title", [f.kind for f in report.findings])
+
+    def test_excluding_the_redirect_removes_only_the_duplicate_finding(self):
+        # The assertion is on what the exclusion changes, not on the whole run: a two-page site
+        # legitimately produces other findings, and asserting exit 0 would be asserting something
+        # this test is not about.
+        def report_with(extra):
+            pages = [
+                PageFact(url="https://example.com/", status=200, content_type="text/html", title="Home"),
+            ] + extra
+            return findings.analyse(CrawlResult(
+                target="https://example.com", origin="https://example.com", pages=pages,
+            ))
+
+        redirecting = [PageFact(url="https://example.com/gone/", status=200,
+                                content_type="text/html", title="Home",
+                                redirect_to="https://example.com/")]
+        direct = [PageFact(url="https://example.com/gone/", status=200,
+                           content_type="text/html", title="Home")]
+        self.assertNotIn("duplicate_title", [f.kind for f in report_with(redirecting).findings])
+        self.assertIn("duplicate_title", [f.kind for f in report_with(direct).findings])

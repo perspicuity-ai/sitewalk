@@ -69,6 +69,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--plan", metavar="FILE", help="check the site against a siteplan file")
     parser.add_argument(
+        "--origin",
+        metavar="URL",
+        help=(
+            "the site the build is for, such as https://example.com. With it, a canonical naming "
+            "that origin is correct and one naming another host is still a finding, and the build's "
+            "sitemap is read against it. Without it the canonical host check is silent, because "
+            "there is nothing to judge a host against"
+        ),
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="write the machine-readable report to stdout instead of the text report",
@@ -135,7 +145,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{PROGRAM}: {root} is not a directory", file=sys.stderr)
             return 2
         source = FileSource(root)
+        # --origin is the origin the build claims to be; the target walked is the synthetic origin
+        # that gives the directory URLs a host. They are different facts and both are needed.
         target = source.origin
+        declared_origin = origin_of(args.origin) if args.origin else ""
         if args.timeout != 10.0 or args.delay != 0.2 or args.user_agent != fetch.USER_AGENT:
             print(
                 f"{PROGRAM}: note: --timeout, --delay and --user-agent do not apply to --dir; "
@@ -154,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
         if not origin:
             print(f"{PROGRAM}: {args.url!r} has no usable origin", file=sys.stderr)
             return 2
+        declared_origin = origin
         source = build_live_source(
             origin,
             user_agent=args.user_agent,
@@ -164,7 +178,9 @@ def main(argv: list[str] | None = None) -> int:
         target = origin
 
     try:
-        result = crawl(source, target, max_pages=args.max_pages)
+        result = crawl(
+            source, target, max_pages=args.max_pages, declared_origin=declared_origin
+        )
     except GuardError as exc:
         print(f"{PROGRAM}: {exc}", file=sys.stderr)
         return 2

@@ -15,6 +15,8 @@ from . import sitemap
 from .facts import ABSENT, DERIVED, PRESENT, Page, PageFact, Skip, Surface
 from .pages import facts_from
 from .sources import PageSource
+from urllib.parse import urlsplit, urlunsplit
+
 from .urls import SURFACE_PATHS, normalise, origin_of, relative_path, same_origin
 
 #: Paths that are fetched as pages even though they are also surfaces.
@@ -27,6 +29,13 @@ class CrawlResult:
 
     target: str
     origin: str
+    #: The origin the build claims to be, when the caller declared one. Empty means the canonical
+    #: host check cannot run: there is nothing to judge a host against.
+    declared_origin: str = ""
+    #: What the site judgements are relative to, stated in the report so a reader knows.
+    judged_against: str = ""
+    #: The origin the sitemap's URLs were read against, when it differs from the walked origin.
+    sitemap_named_origin: str = ""
     pages: list[PageFact] = field(default_factory=list)
     surfaces: dict[str, Surface] = field(default_factory=dict)
     sitemap_urls: list[str] = field(default_factory=list)
@@ -43,6 +52,17 @@ class CrawlResult:
     cap_reached: bool = False
     started_at: str = ""
     finished_at: str = ""
+
+
+def _remap(url: str, from_origin: str, to_origin: str) -> str:
+    """Rewrite a URL from the origin a build claims to be onto the origin it is walked as.
+
+    The path is the same in a build directory: the sitemap says ``https://example.com/about/`` and
+    the file is ``about/index.html``, reached by walking ``https://localhost/about/``.
+    """
+    parts = urlsplit(url)
+    path = urlunsplit(("", "", parts.path or "/", parts.query, ""))
+    return f"{to_origin}{path}"
 
 
 def _robots_skip(url: str, rule) -> Skip:
@@ -77,6 +97,7 @@ def crawl(
     *,
     max_pages: int = 50,
     max_sitemaps: int = sitemap.MAX_SITEMAP_DEPTH,
+    declared_origin: str = "",
 ) -> CrawlResult:
     """Discover and read a site, bounded at every step.
 
@@ -87,6 +108,8 @@ def crawl(
     result = CrawlResult(
         target=target,
         origin=origin,
+        declared_origin=declared_origin,
+        judged_against=declared_origin or origin,
         source_kind=getattr(source, "kind", ""),
         source_label=getattr(source, "label", ""),
         user_agent=getattr(source, "user_agent", ""),
@@ -117,6 +140,10 @@ def crawl(
     # 2. Discovery from the sitemap, and from any sitemap that robots.txt names.
     discovered: list[str] = []
     sitemap_queue: list[tuple[str, int]] = []
+    # The sitemap of a build names the site's own URLs, which are on the origin the build claims to
+    # be -- not on the synthetic origin a directory is walked as. When the caller declares that
+    # origin, the sitemap is read against it; when not, the synthetic origin is all there is.
+    sitemap_origin = declared_origin or origin
     sitemap_page = surface_pages.get("sitemap.xml")
     if sitemap_page is not None and sitemap_page.ok and sitemap_page.body:
         sitemap_queue.append((normalise(f"{origin}/sitemap.xml"), 0))
@@ -126,7 +153,13 @@ def crawl(
     if robots_page is not None and robots_page.ok and robots_page.body:
         robots_sitemaps, disallowed = sitemap.parse_robots(robots_page.body)
     for candidate in robots_sitemaps:
-        if same_origin(candidate, origin):
+        if same_origin(candidate, sitemap_origin):
+            # Remapped onto the walked origin, so it is the same queue entry as the top-level
+            # sitemap rather than a second pass over the same file.
+            sitemap_queue.append(
+                (normalise(_remap(candidate, sitemap_origin, origin)), 0)
+            )
+        elif same_origin(candidate, origin):
             sitemap_queue.append((normalise(candidate), 0))
         else:
             result.notes.append(
@@ -153,18 +186,29 @@ def crawl(
         for message in parsed.errors:
             result.sitemap_errors.append(f"{relative_path(sitemap_url)}: {message}")
         for url in parsed.urls:
-            if same_origin(url, origin):
+            if same_origin(url, sitemap_origin):
+                # Named for the declared origin: map it onto the origin being walked so the crawl
+                # can read the file that serves it, and record that the site itself named it.
+                discovered.append(normalise(_remap(url, sitemap_origin, origin)))
+                result.sitemap_named_origin = sitemap_origin
+            elif same_origin(url, origin):
                 discovered.append(normalise(url))
             else:
-                result.notes.append(f"the sitemap names a URL off the submitted origin: {url}")
+                result.notes.append(
+                    f"the sitemap names a URL off the site: {url} (not on {sitemap_origin})"
+                )
         for nested in parsed.nested:
-            if same_origin(nested, origin):
+            if same_origin(nested, sitemap_origin):
+                sitemap_queue.append(
+                    (normalise(_remap(nested, sitemap_origin, origin)), depth + 1)
+                )
+            elif same_origin(nested, origin):
                 sitemap_queue.append((normalise(nested), depth + 1))
             else:
                 result.notes.append(f"the sitemap index names a sitemap off the origin: {nested}")
 
-    result.sitemap_urls = list(discovered)
-    in_sitemap = set(discovered)
+    result.sitemap_urls = list(dict.fromkeys(discovered))
+    in_sitemap = set(result.sitemap_urls)
 
     # 3. The home page is always first: it is what the user submitted, and its links are the
     #    second discovery source.

@@ -151,7 +151,9 @@ class StayingInsideTheOrigin(unittest.TestCase):
         self.assertEqual(by_url["https://example.com/old/"].redirect_to, "https://example.com/new/")
         self.assertTrue(by_url["https://example.com/old/"].ok)
 
-    def test_a_sitemap_naming_another_origin_does_not_add_it(self):
+    def test_a_sitemap_naming_a_foreign_url_does_not_add_that_url(self):
+        # With no declared origin the site's own sitemap may be read, but a URL on a host the site
+        # has not claimed to be is never crawled. The note names the host it was judged against.
         http = fakes.FakeHTTP(routes={})
         http.add("/", "<title>Home</title>")
         http.add(
@@ -161,7 +163,25 @@ class StayingInsideTheOrigin(unittest.TestCase):
         )
         result, _source = run(http)
         self.assertNotIn("https://elsewhere.example/other", {f.url for f in result.pages})
-        self.assertTrue(any("off the submitted origin" in note for note in result.notes))
+        self.assertTrue(any("off the site" in note for note in result.notes))
+        self.assertEqual(result.sitemap_urls, [])
+
+    def test_a_declared_origin_lets_the_sites_own_sitemap_be_read(self):
+        # The U14 case: the sitemap names the origin the site claims to be, so its URLs are
+        # accepted and mapped onto the origin being walked.
+        http = fakes.FakeHTTP(routes={})
+        http.add("/", "<title>Home</title>")
+        http.add(
+            "/sitemap.xml",
+            '<urlset><url><loc>https://example.com/listed/</loc></url></urlset>',
+            content_type="application/xml",
+        )
+        http.add("/listed/", "<title>Listed</title>")
+        source = fakes.live_source(http, origin=ORIGIN)
+        with fakes.fake_network(http):
+            result = crawl(source, ORIGIN, declared_origin=ORIGIN)
+        self.assertIn("https://example.com/listed/", result.sitemap_urls)
+        self.assertIn("https://example.com/listed/", {f.url for f in result.pages})
 
 
 class RobotsIsObeyed(unittest.TestCase):

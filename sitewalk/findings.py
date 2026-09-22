@@ -31,6 +31,7 @@ _INFO_KINDS = frozenset(
     {
         "script_rendered",
         "surface_missing",
+        "page_reached_by_redirect",
         "canonical_missing",
         "canonical_other_path",
         "missing_description",
@@ -157,11 +158,15 @@ def analyse(result: CrawlResult) -> SiteReport:
         )
 
     # -- titles and descriptions -------------------------------------------------------------
-    titled = Counter(f.title for f in pages)
+    # A page reached through a redirect serves its target's content, so its title and description
+    # are the target's. Counting both reports one page twice and invents duplicates that no reader
+    # of the site would see: on the first live run this produced four of the seven errors.
+    counted = [f for f in pages if not f.redirect_to]
+    titled = Counter(f.title for f in counted)
     duplicates = sorted(title for title, count in titled.items() if title and count > 1)
     if duplicates:
         for title in duplicates:
-            urls = [f.url for f in pages if f.title == title]
+            urls = [f.url for f in counted if f.title == title]
             _add(
                 report,
                 "duplicate_title",
@@ -187,10 +192,10 @@ def analyse(result: CrawlResult) -> SiteReport:
             + _named(relative_path(u) for u in empty_titles),
         )
 
-    described = Counter(f.description for f in pages if f.description is not None)
+    described = Counter(f.description for f in counted if f.description is not None)
     duplicate_descriptions = sorted(d for d, count in described.items() if count > 1)
     for description in duplicate_descriptions:
-        urls = [f.url for f in pages if f.description == description]
+        urls = [f.url for f in counted if f.description == description]
         _add(
             report,
             "duplicate_description",
@@ -207,12 +212,30 @@ def analyse(result: CrawlResult) -> SiteReport:
         )
 
     # -- canonicals --------------------------------------------------------------------------
-    own_host = (origin_of(result.origin) or "").split("://")[-1].split(":")[0]
-    cross_host = [
-        f.url
-        for f in pages
-        if f.canonical_host and f.canonical_host not in (own_host, "")
-    ]
+    # A canonical is judged against the origin the build or site *claims to be*. With no declared
+    # origin there is nothing to judge a host against, so the host check does not fire and the
+    # report says so: guessing from the build's own metadata would be circular when that metadata
+    # is what the check is about.
+    declared_host = (
+        (origin_of(result.declared_origin) or "").split("://")[-1].split(":")[0]
+        if result.declared_origin
+        else ""
+    )
+    cross_host = (
+        [
+            f.url
+            for f in pages
+            if f.canonical_host and f.canonical_host not in (declared_host, "")
+        ]
+        if declared_host
+        else []
+    )
+    if not declared_host:
+        report.notes.append(
+            "no origin was declared, so no canonical was judged to be on another host: a host can "
+            "only be called foreign against an origin the site claims to be. Pass --origin to "
+            "check it, or read the canonical column as information"
+        )
     if cross_host:
         _add(
             report,
@@ -334,6 +357,15 @@ def analyse(result: CrawlResult) -> SiteReport:
             "JavaScript, so it cannot see what a browser would render; the visible-text length "
             "is not evidence that the page is empty. Pages: "
             + _named(relative_path(f.url) for f in shell_pages),
+        )
+    redirecting = [f.url for f in result.pages if f.redirect_to]
+    if redirecting:
+        _add(
+            report,
+            "page_reached_by_redirect",
+            f"{len(redirecting)} page(s) were reached through a redirect and are reported with the "
+            "content they served, so they are not counted as duplicates of the page they point at: "
+            + _named(f"{relative_path(u)} -> {by_url[u].redirect_to}" for u in redirecting),
         )
     if result.truncated_pages:
         _add(

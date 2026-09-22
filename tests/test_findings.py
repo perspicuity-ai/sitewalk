@@ -21,10 +21,10 @@ from .fakes import FIXTURES
 EXAMPLE = FIXTURES / "example-site"
 
 
-def offline_result(directory: Path = EXAMPLE, **kwargs) -> CrawlResult:
+def offline_result(directory: Path = EXAMPLE, origin: str = "", **kwargs) -> CrawlResult:
     source = FileSource(directory)
     with __import__("tests.fakes", fromlist=["no_network"]).no_network():
-        return crawl(source, source.origin, **kwargs)
+        return crawl(source, source.origin, declared_origin=origin, **kwargs)
 
 
 def fact(url: str, **kwargs) -> PageFact:
@@ -47,7 +47,7 @@ class EveryPromisedFindingIsProduced(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.report = findings.analyse(offline_result())
+        cls.report = findings.analyse(offline_result(origin="https://localhost"))
         cls.produced = kinds(cls.report)
 
     def test_page_count_and_status_distribution(self):
@@ -80,6 +80,8 @@ class EveryPromisedFindingIsProduced(unittest.TestCase):
         self.assertIn("/team/", message)
 
     def test_canonicals_pointing_at_another_host(self):
+        # Judged against a declared origin: a host can only be called foreign against an origin
+        # the site claims to be, so this needs one (U14).
         self.assertIn("canonical_other_host", self.produced)
         self.assertIn("example.org", message_for(self.report, "canonical_other_host"))
 
@@ -212,12 +214,16 @@ class DuplicateDetection(unittest.TestCase):
         self.assertTrue(any("unknown rather than absent" in note for note in report.notes))
 
     def test_a_canonical_on_another_host_is_an_error_and_a_self_canonical_is_not(self):
-        report = self._report(
-            [
+        result = CrawlResult(
+            target="https://example.com",
+            origin="https://example.com",
+            declared_origin="https://example.com",
+            pages=[
                 fact("https://example.com/a", canonical="https://elsewhere.example/a", canonical_host="elsewhere.example"),
                 fact("https://example.com/b", canonical="https://example.com/b", canonical_host="example.com"),
-            ]
+            ],
         )
+        report = findings.analyse(result)
         self.assertIn("canonical_other_host", kinds(report))
         self.assertNotIn("canonical_other_path", kinds(report))
 

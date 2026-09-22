@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 31
+revision: 33
 skill_version: 0.5.0
 updated: 2026-09-21
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-22T07:15:00-06:00"
+updated_at: "2026-09-22T08:45:00-06:00"
 record_status: open
 work_status: active
 ---
@@ -349,8 +349,9 @@ David's; authority to treat the existing code as ratified, which this plan's U1 
 | **U9** (delivered) | **Apply U1's deletion test across the whole package, and fix what it finds.** Finch found two items that fail the very test U1 used to delete six others, so the test was right and was not applied exhaustively | `sitewalk/guard.py`, `sitewalk/errors.py`, `sitewalk/plan.py`, `docs/DESIGN.md`. Independent of U6–U8 except for the plan JSON, which is U8's surface | Moss, after U8 (the `plan` JSON item touches U8's file) | Six criteria: (1) `Address.host`, `Address.port` and `Address.family` are written but read nowhere — **verified by hand, not by a name-level scan** — and are removed; (2) `PlanError` has no reference anywhere and is removed or given a documented use; (3) the deletion test is re-run exhaustively and its **result is recorded, including a nil result**; (4) `plan.identity_schema_types_met: true` while `passed: false` on a malformed plan is fixed, since that is the same overclaim shape as U8's states; (5) DESIGN D6's `app_root_markers` and D1's `read(path)` are corrected to `app_root_element` and `fetch`; (6) each fix answers P1's question with a test that fails on the wrong change | 0.5–1 focus session. Uncertainty **low** |
 | **U10** (**withdrawn, not deferred**) | `json-ld` means the home page, and the verdict names the page — **the first half was withdrawn by its owner; the second half remained and is delivered as U12** | `siteplan/docs/PLAN-FORMAT.md` at `7e77be1` | — | **Withdrawn 2026-09-22.** Heron adopted the principal's third option and changed the document: `json-ld` means the site publishes markup **on some page it serves**, the front-door requirement is `identity.schema_types` checked on the home page, and **a consumer must not branch on `kind`**. Two of those three `sitewalk` already did, so the unit dissolved rather than shrinking. The change log supersedes the home-page row by a **named replacement** rather than deleting it, and the withdrawal is recorded here for the same reason: a unit that vanishes without a reason is indistinguishable from one nobody did |
 | **U12** (delivered) | **The `json-ld` verdict names the page it found the markup on.** The live rule requires it: "json-ld: met" without the page is the same class of claim as a verdict on a version the consumer does not know | The same document section, at `7e77be1`. Resolves the surviving half of **G1** | Moss, 2026-09-22 | Met: the derived surface carries the pages that carry the markup, or the pages read when none does; the finding and the surfaces line name them; a test asserts it on the JSON, a test asserts the named pages are exactly the pages that carry it, and a test asserts an **inner-page-only** site is met, which is the clause that made home-page-only wrong | 0.25 focus session |
-| **U13** (registered from U4) | **A redirecting page's facts are the target's facts, so duplicate detection counts the target twice.** Two live errors are this: `/accounts/logout/` redirects to `/` and is reported as a duplicate of it, and `/company/` redirects to `/accounts/login/` and is reported as a duplicate of that. One further error and two notes name the same pages | Found by **U4's live run**, the first contact with a real site | Moss, after U4 returns | Three criteria: (1) a page reached through a redirect is distinguishable from one served directly, in the report and in the JSON; (2) it is not counted as a duplicate of the page it redirected to; (3) a test reproduces the live case with two paths redirecting to one | 0.5 focus session. Uncertainty **low** once the shape is chosen — the fact is already recorded (`redirect_to`), and the question is what the duplicate checks should do with it |
-| **U14** (registered from U4) | **`--dir` invents an origin and then judges the build against it.** Every page in `agent-eligibility`'s build declares `https://agents.perspicuity.ai` as its canonical, correctly; the tool walks it as `https://localhost`, so `canonical_other_host` fires on them and **gates under `--strict`**. The sitemap is rejected the same way — 3 URLs in the file, 0 accepted, all "off the submitted origin" | Found by **U4's offline run**, the first real build. This is the deploy gate's central capability gap | Moss, after U4 returns | Four criteria: (1) `--dir` accepts the origin the build is for, so a canonical naming that origin is **self**, not another host; (2) the build's own sitemap is read against that origin rather than rejected as off-site; (3) when no origin is given the invented one is **stated in the report**, so a reader knows what the judgements are relative to; (4) tests cover a build whose canonical is the real origin, and one whose canonical is genuinely another host, which must still be reported | 1 focus session. Uncertainty **low**. **Shaped as a flag**: the invented origin has to come from somewhere, and `--dir` cannot infer it without reading the build's own metadata — which is circular when that metadata is what the check is about |
+| **U13** (delivered) | **A redirecting page's facts are the target's facts, so duplicate detection counts the target twice.** Two live errors are this: `/accounts/logout/` redirects to `/` and is reported as a duplicate of it, and `/company/` redirects to `/accounts/login/` and is reported as a duplicate of that. One further error and two notes name the same pages | Found by **U4's live run**, the first contact with a real site | Moss, after U4 returns | Three criteria: (1) a page reached through a redirect is distinguishable from one served directly, in the report and in the JSON; (2) it is not counted as a duplicate of the page it redirected to; (3) a test reproduces the live case with two paths redirecting to one | 0.5 focus session. Uncertainty **low** once the shape is chosen — the fact is already recorded (`redirect_to`), and the question is what the duplicate checks should do with it |
+| **U15** (granted, pickup plan registered) | **A real plan, generated by `siteplan new`, checked against a real build by `sitewalk --plan`.** No `--plan` check has ever met a real plan — only fixtures and conformance cases — which is the end-to-end gap `siteplan` recorded as unestablished. Both halves exist and need no project | `siteplan new`; the `agent-eligibility` build from U4. Closes the gap **U4's plan amendment** recorded | Moss, after U13 and U14 | Three criteria: (1) a plan generated by the producer is read without a fault by this consumer; (2) the surface and identity checks report against the real build, and a surface the build does not publish is reported unmet or unverified as the rules require; (3) the run is recorded with its findings reviewed against the build's files, so the result is checked rather than believed | 0.25 focus session. Uncertainty **low** |
+| **U14** (delivered) | **`--dir` invents an origin and then judges the build against it.** Every page in `agent-eligibility`'s build declares `https://agents.perspicuity.ai` as its canonical, correctly; the tool walks it as `https://localhost`, so `canonical_other_host` fires on them and **gates under `--strict`**. The sitemap is rejected the same way — 3 URLs in the file, 0 accepted, all "off the submitted origin" | Found by **U4's offline run**, the first real build. This is the deploy gate's central capability gap | Moss, after U4 returns | Four criteria: (1) `--dir` accepts the origin the build is for, so a canonical naming that origin is **self**, not another host; (2) the build's own sitemap is read against that origin rather than rejected as off-site; (3) when no origin is given the invented one is **stated in the report**, so a reader knows what the judgements are relative to; (4) tests cover a build whose canonical is the real origin, and one whose canonical is genuinely another host, which must still be reported | 1 focus session. Uncertainty **low**. **Shaped as a flag**: the invented origin has to come from somewhere, and `--dir` cannot infer it without reading the build's own metadata — which is circular when that metadata is what the check is about |
 
 **Order and dependency.** U1 → U2 → U3, with U5 alongside U1 and U4 startable as soon as David
 names a project. U4 and U3 can run in either order once U2 is done; the requested order puts the
@@ -909,6 +910,53 @@ record's scope, so it is **not** made here: it is registered as proposal P1 unde
 grant, to be applied when the principal authorises a change to `AGENTS.md` or when U6 runs under
 the grant that already includes that file.
 
+#### U14 pickup plan — the origin the build claims to be
+
+Registered before U14 begins. This is the priority: the deploy gate is the product's centre, and the
+defect makes it emit a gating error on a page doing exactly the right thing, on **every page of every
+build that sets a canonical** — which is every build a `siteplan` brief produced, since the brief
+requires one. The sitemap rejection is the same root cause and compounds it: a reader seeing
+`sitemap: named 0` concludes the build has no sitemap.
+
+**The distinction the fix rests on.** `--dir` walks the build as a synthetic origin because a
+directory has no host. A build that declares a canonical for **its own deploy target** is correct; a
+build that declares **someone else's host** is claiming to be a site it is not, and the tool must not
+silently accept that. The guard exists for the second case and must survive the fix.
+
+**What will be built:**
+
+1. **`--url` and `--dir` gain `--origin URL`**, the origin the build or site is for. Using the
+   existing flag name for both modes rather than inventing one: it is the same fact.
+2. **With `--origin` given**, a canonical naming that origin is *self*; a canonical naming any other
+   host is still `canonical_other_host` and still gates. The build's own `sitemap.xml` is read against
+   that origin, so its URLs are accepted rather than rejected as off-site.
+3. **With no `--origin`**, the canonical-**host** check does not fire, because there is nothing to
+   judge it against — the tool cannot know whether a host is the build's own without being told, and
+   reading it out of the build's metadata is circular when that metadata is what the check is about.
+   The report **says so**, and the canonical value is still reported as a fact. This is chosen over
+   guessing from the sitemap's first URL, which would make the check depend on data the check is
+   meant to test.
+4. **The tests assert both directions**, as the principal required: a build declaring its true origin
+   passes, and **a build declaring another site's host still gates.** A third case covers the
+   no-origin mode, where the host check is silent and the report says why.
+
+#### U13 pickup plan — a redirecting page is not its target
+
+Registered before U13 begins. Two live errors were the tool counting a redirect target twice:
+`/accounts/logout/` redirects to `/` and was reported as a duplicate of it, and `/company/` redirects
+to `/accounts/login/`. Four of the seven live errors were artifacts of this and of the related
+reporting.
+
+**What will be built:**
+
+1. A fact on the page recording that it was reached through a redirect — the data already exists as
+   `redirect_to`; the fix is that the checks consult it.
+2. A redirecting page is **excluded from duplicate title and description detection**, because its
+   facts are its target's facts and counting both reports one page twice.
+3. It is still reported, with its redirect named, so a reader sees it rather than having it vanish.
+4. The test reproduces the live case: two paths redirecting to one, and neither counted as a
+   duplicate of the other.
+
 ### U4 pickup plan
 
 Registered before U4 begins, on the principal's authorisation of 2026-09-22.
@@ -1041,6 +1089,8 @@ registered and pending.
 | A1–A5, A8, A9 (the offline gate) | The committed revision, the two independent derivations, `make ci` | Moss, at U1 delivery, 2026-09-21 | **Met, with the limits below.** Nine of nine per-page facts and twelve of twelve site-wide findings agree with computations made without importing the tool's parser; `--dir` runs inside a harness where any socket use raises; `make ci` exits 0 and exits 2 on each of three injected defects; 244 tests pass offline | Accepted by Moss as self-check only — see the next row. U1's sub-record carries the detail |
 | A7 (the guard) | `tests/test_guard.py` and `tests/test_guard_adversarial.py`, injected fakes, no network | Moss, at U2 delivery, 2026-09-21 | **Met, with one defect found and fixed.** Every rule refuses what it must and names the address it refused, through `fetch.fetch` rather than through `guard` alone. The adversarial pass found that an `http`→`https` upgrade redirect — the commonest redirect on the web — was refused as off-origin, which would have reported a plain-HTTP site as unreachable; the rule is now a same-site check that allows the upgrade and refuses downgrades, other hosts, subdomains and other ports | Accepted by Moss as self-check only. The upgrade defect is the evidence that the adversarial pass was worth running, and it is also the reason an independent assessor is still wanted |
 | U6 — the robots skip is unmissable | `tests/test_dir_mode.py::TheRobotsSkipIsUnmissable`, `tests/test_sitemap.py::TheSourceLineIsVerbatim`, and the injected wrong implementation | Moss, at U6 delivery, 2026-09-21 | **Met, and verified by breaking it.** The count is in the report header (`excluded: 1 path(s) …`), `limits.paths_skipped_robots` is in the JSON, each skip quotes its rule, and the quote is **byte-identical** to the fixture line including its leading whitespace and trailing comment. The wrong implementation — storing the parser's stripped variable — fails **five tests** and `make ci` exits 2; the fixture-integrity assertion fails with it, which is the guard against the fixture quietly losing its ability to separate the two | Accepted as a self-check. The wrong-change verification is the evidence that the tests can fail |
+| U14 — `--dir` judges against the origin the build claims to be | `.u4/offline.json` (before) against a re-run of the same command (after), `tests/test_dir_mode.py::ADeclaredOriginDoesNotRelaxTheGuard` and `::TheCanonicalCheckNeedsADeclaredOrigin` | Moss, 2026-09-22 | **Met, verified by re-running the same target with the same command.** `agent-eligibility`'s build: **errors 2 → 1** and **sitemap named 0 → 3** (the file has 3). The one remaining error is `no_json_ld` on 13 pages, which is **true** — verified by grepping the build, only `/` and `/rubric/` carry markup, which is the format's own example of a site publishing it somewhere. Both directions asserted: a build declaring its own origin passes, a build declaring a third party's host **still gates**, and with no origin declared the host check is silent and the report says why | Accepted. The guard was not relaxed, which was the requirement |
+| U13 — a redirecting page is not its target | A local reproduction of the live shape, `tests/test_dir_mode.py::ARedirectingPageIsNotItsTarget`, and the recorded live run | Moss, 2026-09-22 | **Met on a reproducible case, and the live half could not be re-measured.** With a redirect in place the run produces **no duplicate finding**; the same page served directly still produces one — which is the fix, on the exact shape the live run showed. **The live re-run failed for an external reason: `findmynextbite.food` is now returning HTTP 500 for `/` and `/sitemap.xml`**, confirmed by an independent client over three attempts in a minute, so the after-state cannot be measured. The earlier live run recorded the defect, and the run against the broken site produced `page_not_ok` and `sitemap_unreadable` findings and the correct exit codes — the tool behaving correctly on a site that is down | Accepted on the reproduction, with the live comparison recorded as **not obtained** rather than claimed |
 | U4 — two runs against real targets | `.u4/live.json` and `.u4/offline.json` (local, gitignored), the target's own `robots.txt`, `sitemap.xml` and build files read independently, and `git status` in each target | Moss, 2026-09-22 | **Met, and it found two tool defects.** **Live** (`findmynextbite.food`): 53 requests, 50 pages, all 200, page cap reached with 28 queued; 40 sitemap URLs **all reached**, and **10 pages found that the sitemap does not name** — including `/api/discovery`, the endpoint `CONTEXT.md` cites as the audit's blind spot, plus `/.well-known/api-catalog`, `/data/listings.json` and three query-parameter variants. 7 error findings, of which **4 are the tool's fault** (`/accounts/logout/` redirects to `/`, `/company/` to `/accounts/login/`, and the redirect targets were judged as duplicates — U13). **Offline** (`agent-eligibility`'s 23-file build): 19 requests, 17 pages, all 200; 2 error findings, of which **`canonical_other_host` is the tool's fault** — the build declares its true origin correctly and the gate judged it against the invented one, which would gate every build that sets a canonical (**U14**). Neither repository was modified | Accepted as the first evidence about real sites, with its limits stated: two targets, one day, and the runs were read by the same hand that wrote the tool |
 | U11 — the disclosure reaches the machine-readable output | `tests/test_plan.py::TheDisclosureReachesTheMachineReadableOutput`, and two injected regressions | Moss, at U11 delivery, 2026-09-22 | **Met, and verified by breaking it.** Every ignored key is now an `info` finding naming it, and appears in `plan.ignored_keys` as data. The audit of every other tolerated case is recorded in the pickup plan and **each row is asserted on the JSON**, so a later change confining one of them to prose fails a test. Confining the ignored-key disclosure to prose again fails 2 tests; removing `skipped_robots` from the JSON fails 4; `make ci` exits 2 for both | Accepted as a self-check. The finding the principal asked for — whether the same shape appears elsewhere — is a **nil result**, recorded as such in the audit table rather than left as an absence |
 | U9 — the deletion test, run across the package | The attribute-level scan (result below), `tests/test_guard.py::TheAddressHoldsOnlyWhatIsRead`, `::NoDeadErrorTypes`, `tests/test_plan.py::ASubCheckReportsWhetherItRan`, and two injected wrong changes | Moss, at U9 delivery, 2026-09-21 | **Met, and the re-run returned a finding rather than nil.** `Address.host/port/family` and `PlanError` are removed. Field counts come from **`tools/field_count.py`**, committed so the number is re-derivable rather than published: `python3 tools/field_count.py --revision 9dfb88e` reports **128** (126 dataclass + 2 protocol) and `--revision 81413bd` reports **124** (124 + 0), a net of **−4**: `Address` −3, `PageSource` −2, `PlanCheck` +1. The scan's single hit, `PageSource.label`, was a **false positive** — it is read through `getattr(source, "label", "")` into the report — and the real defect was the Protocol declaring `kind` and `label`, members no source must implement. **The two counts published in earlier revisions of this row (115 → 113, "fell by two") were wrong**: they came from a counting script that missed `@dataclass(frozen=True)` and read `class X(Protocol)` as no protocol at all, and I corrected the row for exactly this defect without re-running the count. Finch's independent count differs by 5 at both revisions (123 → 119, same −4 delta); the scripts disagree on which classes count, the delta agrees, and committing this one is what makes at least one of the two reproducible. The plan's `required_surfaces_met: true` beside `passed: false` is fixed: a sub-check that did not run reports `None`, not `True`. Both wrong changes fail tests and `make ci` | Accepted as a self-check. The one hit being a declaration error rather than dead code is the honest result, and it is recorded as such rather than as a clean nil |
@@ -1051,6 +1101,26 @@ registered and pending.
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
 ## Changes
+
+Revision 33, 2026-09-22T08:45:00-06:00. **U14 and U13 are delivered.** Source: both units' evidence.
+Reason: each is marked delivered with what was actually observed. What changed: `--origin` on both
+modes; the canonical host check judges against the origin the build claims to be and is silent with a
+stated reason when none is declared; the build's own sitemap is read against that origin and remapped
+onto the walked one; duplicate detection excludes pages reached through a redirect and reports them
+as such. What is preserved: the guard, which the tests assert still fires on a third party's host.
+Affects: U15 next. **One acceptance check could not be completed**: the live target is returning HTTP
+500 and the before-and-after re-run is therefore unavailable — recorded as not obtained, with the
+local reproduction standing in for it.
+
+Revision 32, 2026-09-22T07:45:00-06:00. **U13, U14 and U15 are granted and their pickup plans are
+registered; U14 is the priority.** Source: the principal's grant of 2026-09-22, fixing rather than
+assessing because the diagnosis is concrete and the verification is better than an assessment — the
+same two targets, re-run, showing the counts change for the right reasons. What changed: three
+pickup plans; the decision in U14 that the fix must distinguish the host being walked from the host
+the build claims to be, with tests asserting both directions, and that with no declared origin the
+host check is silent and says so rather than guessing from the build's own metadata; and U15, which
+closes a gap that has been outstanding across two projects since the format was frozen. What is
+preserved: every earlier revision. Affects: U14 first, then U13, then U15.
 
 Revision 31, 2026-09-22T07:15:00-06:00. **U4 is delivered.** Source: the two runs' records. Reason:
 each planned result is marked delivered with its evidence. What changed: U4's row carries what the

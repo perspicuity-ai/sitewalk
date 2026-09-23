@@ -197,3 +197,7 @@ That check is a spell-checker, not a reviewer: a clean result establishes none o
   alternatives rejected at that point.
 - [`docs/records/`](docs/records/) — the sub-decisions, each naming its parent.
 - [`AGENTS.md`](AGENTS.md) — how work is done here, including the standing constraints.
+
+## Licence
+
+Apache License 2.0. See [LICENSE](LICENSE).

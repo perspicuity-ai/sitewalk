@@ -1,11 +1,11 @@
 ---
 format: perspicuity-work/1
 id: sw-project
-revision: 39
+revision: 40
 skill_version: 0.6.0
 updated: 2026-09-22
 created_at: "2026-09-21T11:48:05-06:00"
-updated_at: "2026-09-22T22:30:13-06:00"
+updated_at: "2026-09-22T23:52:39-06:00"
 record_status: open
 work_status: waiting
 ---
@@ -1474,7 +1474,21 @@ registered and pending.
 | U17 — the false-positive rate on the current build (offline half) | `.u4/u17/`, the target files pinned by SHA-256 to `912ec49` and `373a174`, and the dispositions in Act | Moss as self-check, 2026-09-23; Primary receives it | **Offline half only.** 29 errors, 0 conditional: 1 false positive (a relative canonical judged against the synthetic origin, U18), 27 true but partial-build, 1 true of a served page. **Not established: the live half, the rate itself, and the tool's accuracy on more than one served page** | Returned to Primary. Not accepted and not complete |
 | B1–B3 (benefit) | Adopting projects' CI logs; a real run against a real site | David; trigger is U4 or a later adoption | Unobserved — needs a project and a site | Carry as U4 |
 
+## Publication, 2026-09-22
+
+David selected option B of [the tools decision](https://github.com/perspicuity-ai/perspicuity) on 2026-09-22: this repository becomes public under the Apache License 2.0. His words: "public for the tools, Apache".
+
+Disclosure pass, run before the visibility change over every commit on every branch, by Claude in the website-review session. It searched added lines for private keys, access tokens, assigned secrets, IP addresses, home-directory paths, email addresses and server paths, and searched file names for `.env` files and key files.
+
+- No private key, token, assigned secret, server path or key file was found.
+- Local home-directory paths appear in notes (13 lines). IP addresses appear only as test inputs: example.com's address and reserved, private and metadata ranges used to test the fetcher's refusals. Two `example.com` email addresses appear in tests.
+- Commit author email: `david.nelson.elske@gmail.com`, which is already public in the commits of `perspicuity-ai/decision-toolkit`.
+
+None of these was judged a reason to hold publication or rewrite history. The scan is a pattern search, not a guarantee.
+
 ## Changes
+
+Revision 40, 2026-09-22T23:52:39-06:00. Changed: the repository gains the Apache License 2.0 (`LICENSE`, and a Licence section in the README), and this record gains "Publication, 2026-09-22" with the disclosure pass that preceded making the repository public. Source: David's selection of option B in the tools decision, 2026-09-22. Reason: the tools decision requires a licence and a recorded disclosure pass before the visibility change. Preserved: revision 39 and earlier stand as written.
 
 Revision 39, 2026-09-22T22:30:13-06:00. **U17's offline half is returned; the live half is held.**
 Source: two `--dir` runs against `find-my-next-bite/public` inside a namespace with no network, the
